@@ -19,10 +19,51 @@ namespace AccessibilityMod
         public static InteractableSelectionManager lastSelectionManager = null;
         public static CommonPadInteractable lastSelectedInteractable = null;
         public static GameObject lastSelectedUIObject = null;
+        public static string lastSpokenText = "";
+        public static float lastSpeechTime = 0f;
+        public static readonly float SPEECH_COOLDOWN = 0.1f; // 100ms cooldown to prevent spam
 
         public override void OnInitializeMelon()
         {
-            LoggerInstance.Msg("Accessibility Mod initialized!");
+            LoggerInstance.Msg("Accessibility Mod initializing...");
+            
+            // Initialize Tolk screen reader
+            if (TolkScreenReader.Instance.Initialize())
+            {
+                LoggerInstance.Msg("Tolk initialized successfully!");
+                
+                string detectedReader = TolkScreenReader.Instance.DetectScreenReader();
+                if (!string.IsNullOrEmpty(detectedReader))
+                {
+                    LoggerInstance.Msg($"Detected screen reader: {detectedReader}");
+                }
+                else
+                {
+                    LoggerInstance.Msg("No screen reader detected, using SAPI fallback");
+                }
+                
+                if (TolkScreenReader.Instance.HasSpeech())
+                {
+                    LoggerInstance.Msg("Speech output available");
+                    TolkScreenReader.Instance.Speak("Disco Elysium Accessibility Mod loaded", true);
+                }
+                
+                if (TolkScreenReader.Instance.HasBraille())
+                {
+                    LoggerInstance.Msg("Braille output available");
+                }
+            }
+            else
+            {
+                LoggerInstance.Warning("Failed to initialize Tolk - falling back to console logging");
+            }
+        }
+        
+        public override void OnApplicationQuit()
+        {
+            // Clean up Tolk when the game exits
+            TolkScreenReader.Instance.Cleanup();
+            LoggerInstance.Msg("Tolk cleaned up");
         }
 
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
@@ -58,7 +99,18 @@ namespace AccessibilityMod
                             if (lastSelectedUIObject == null || lastSelectedUIObject != selectable.gameObject)
                             {
                                 lastSelectedUIObject = selectable.gameObject;
-                                LoggerInstance.Msg($"[UI SELECTION] Selected: {name} - Text: '{textContent}' - State: {state}");
+                                
+                                // Speak the UI element with Tolk
+                                string speechText = NavigationHelper.FormatUIElementForSpeech(selectable.gameObject, textContent);
+                                if (!string.IsNullOrEmpty(speechText) && speechText != lastSpokenText)
+                                {
+                                    TolkScreenReader.Instance.Speak(speechText, true); // Interrupt for menu navigation
+                                    lastSpokenText = speechText;
+                                    lastSpeechTime = Time.time;
+                                }
+                                
+                                // Keep minimal logging for debugging
+                                LoggerInstance.Msg($"[UI DEBUG] {name}: '{textContent}'");
                             }
                         }
                     }
@@ -97,60 +149,29 @@ namespace AccessibilityMod
         {
             try
             {
-                string logMessage = "Selected interactable: ";
+                string speechText = NavigationHelper.FormatInteractableForSpeech(interactable);
                 
-                // Try to get information about the object
-                var interactableType = interactable.CurrentType();
-                logMessage += $"Type: {interactableType}, ";
-
-                // Get world position
-                var worldPos = interactable.GetWorldPosition();
-                logMessage += $"Position: ({worldPos.x:F2}, {worldPos.y:F2}, {worldPos.z:F2}), ";
-
-                // Check if it's an orb or regular interactable
-                var orb = interactable.Orb;
-                var mouseOverHighlight = interactable.Interactable;
-
-                if (orb != null)
+                if (!string.IsNullOrEmpty(speechText))
                 {
-                    logMessage += "Object: Orb, ";
-                    
-                    // Try to get the world orb for more information
-                    var worldOrb = orb.WorldOrb;
-                    if (worldOrb != null)
+                    // Check for cooldown to prevent rapid speech
+                    if (Time.time - AccessibilityMod.lastSpeechTime > AccessibilityMod.SPEECH_COOLDOWN)
                     {
-                        // Try to get entity information
-                        var transform = orb.transform;
-                        if (transform != null)
+                        // Don't repeat the same text
+                        if (speechText != AccessibilityMod.lastSpokenText)
                         {
-                            logMessage += $"GameObject: {transform.gameObject.name}, ";
+                            TolkScreenReader.Instance.Speak(speechText, false); // Don't interrupt for world objects
+                            AccessibilityMod.lastSpokenText = speechText;
+                            AccessibilityMod.lastSpeechTime = Time.time;
                         }
                     }
-                }
-                else if (mouseOverHighlight != null)
-                {
-                    logMessage += "Object: MouseOverHighlight, ";
                     
-                    // Try to get the game object name
-                    var transform = mouseOverHighlight.transform;
-                    if (transform != null)
-                    {
-                        logMessage += $"GameObject: {transform.gameObject.name}, ";
-                    }
+                    // Keep minimal logging for debugging
+                    MelonLogger.Msg($"[OBJECT DEBUG] {speechText}");
                 }
-
-                // Get game entity if available
-                var gameEntity = interactable.GetGameEntity();
-                if (gameEntity != null)
-                {
-                    logMessage += $"Entity: {gameEntity.name}, ";
-                }
-
-                MelonLogger.Msg(logMessage);
             }
             catch (Exception ex)
             {
-                MelonLogger.Error($"Error logging interactable info: {ex}");
+                MelonLogger.Error($"Error announcing interactable: {ex}");
             }
         }
     }
@@ -163,7 +184,8 @@ namespace AccessibilityMod
         {
             try
             {
-                MelonLogger.Msg($"Orb added to selection: {orb?.name ?? "Unknown"} at distance {distance:F2}");
+                // Keep minimal debug logging
+                MelonLogger.Msg($"[ORB DEBUG] {orb?.name ?? "Unknown"} at distance {distance:F2}");
             }
             catch (Exception ex)
             {
@@ -182,21 +204,20 @@ namespace AccessibilityMod
             {
                 if (value != null)
                 {
-                    MelonLogger.Msg($"Interactable selection changed via setter");
-                    
-                    // Get basic information
-                    var toString = value.ToString();
-                    if (!string.IsNullOrEmpty(toString))
+                    // Use Tolk to announce the object
+                    string speechText = NavigationHelper.FormatInteractableForSpeech(value);
+                    if (!string.IsNullOrEmpty(speechText) && speechText != AccessibilityMod.lastSpokenText)
                     {
-                        MelonLogger.Msg($"Selected object: {toString}");
+                        if (Time.time - AccessibilityMod.lastSpeechTime > AccessibilityMod.SPEECH_COOLDOWN)
+                        {
+                            TolkScreenReader.Instance.Speak(speechText, false);
+                            AccessibilityMod.lastSpokenText = speechText;
+                            AccessibilityMod.lastSpeechTime = Time.time;
+                        }
                     }
                     
-                    // Try to get world position for spatial context
-                    if (value.HaveAnyWorldInteractableObject())
-                    {
-                        var worldPos = value.GetWorldPosition();
-                        MelonLogger.Msg($"Object world position: ({worldPos.x:F2}, {worldPos.y:F2}, {worldPos.z:F2})");
-                    }
+                    // Keep minimal debug logging
+                    MelonLogger.Msg($"[SETTER DEBUG] {speechText ?? "Unknown object"}");
                 }
             }
             catch (Exception ex)
@@ -210,6 +231,140 @@ namespace AccessibilityMod
     // Helper class for shared navigation methods
     public static class NavigationHelper
     {
+        // Format interactable objects for speech output
+        public static string FormatInteractableForSpeech(CommonPadInteractable interactable)
+        {
+            try
+            {
+                if (interactable == null) return null;
+                
+                string speechText = "";
+                
+                // Get game entity name first (most descriptive)
+                var gameEntity = interactable.GetGameEntity();
+                if (gameEntity != null && !string.IsNullOrEmpty(gameEntity.name))
+                {
+                    speechText = CleanObjectName(gameEntity.name);
+                }
+                
+                // If no entity name, try to get object name
+                if (string.IsNullOrEmpty(speechText))
+                {
+                    var orb = interactable.Orb;
+                    var mouseOverHighlight = interactable.Interactable;
+                    
+                    if (orb != null)
+                    {
+                        var transform = orb.transform;
+                        if (transform != null && !string.IsNullOrEmpty(transform.gameObject.name))
+                        {
+                            speechText = "Orb: " + CleanObjectName(transform.gameObject.name);
+                        }
+                    }
+                    else if (mouseOverHighlight != null)
+                    {
+                        var transform = mouseOverHighlight.transform;
+                        if (transform != null && !string.IsNullOrEmpty(transform.gameObject.name))
+                        {
+                            speechText = CleanObjectName(transform.gameObject.name);
+                        }
+                    }
+                }
+                
+                // Add type information if we have something
+                if (!string.IsNullOrEmpty(speechText))
+                {
+                    var interactableType = interactable.CurrentType();
+                    // InteractableType enum only has ORB and MOUSE_HIGHLIGHT, no None value
+                    // Only add type prefix if not already in the text
+                    string typeStr = interactableType.ToString();
+                    if (!speechText.ToLower().Contains(typeStr.ToLower()) && !speechText.StartsWith("Orb:"))
+                    {
+                        if (interactableType == Il2Cpp.InteractableType.ORB)
+                        {
+                            speechText = $"Orb: {speechText}";
+                        }
+                        else if (interactableType == Il2Cpp.InteractableType.MOUSE_HIGHLIGHT)
+                        {
+                            // Don't add prefix for regular objects
+                        }
+                    }
+                }
+                
+                return speechText;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error formatting interactable for speech: {ex}");
+                return null;
+            }
+        }
+        
+        // Format UI elements for speech output
+        public static string FormatUIElementForSpeech(GameObject uiObject, string textContent)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(textContent)) return null;
+                
+                // Clean up the text content
+                string speechText = textContent.Trim();
+                
+                // Add UI element type if it's useful context
+                var button = uiObject.GetComponent<UnityEngine.UI.Button>();
+                if (button != null)
+                {
+                    speechText = $"Button: {speechText}";
+                }
+                
+                var toggle = uiObject.GetComponent<UnityEngine.UI.Toggle>();
+                if (toggle != null)
+                {
+                    speechText = $"Toggle {(toggle.isOn ? "checked" : "unchecked")}: {speechText}";
+                }
+                
+                var slider = uiObject.GetComponent<UnityEngine.UI.Slider>();
+                if (slider != null)
+                {
+                    int percentage = Mathf.RoundToInt(slider.normalizedValue * 100);
+                    speechText = $"Slider {percentage} percent: {speechText}";
+                }
+                
+                var dropdown = uiObject.GetComponent<UnityEngine.UI.Dropdown>();
+                if (dropdown != null && dropdown.options != null && dropdown.value < dropdown.options.Count)
+                {
+                    speechText = $"Dropdown: {dropdown.options[dropdown.value].text}";
+                }
+                
+                return speechText;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error formatting UI element for speech: {ex}");
+                return textContent; // Fall back to raw text
+            }
+        }
+        
+        // Clean up object names for better speech output
+        private static string CleanObjectName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return name;
+            
+            // Remove common Unity prefixes/suffixes
+            name = name.Replace("_", " ");
+            name = name.Replace("(Clone)", "");
+            name = name.Replace("GameObject", "");
+            
+            // Remove brackets and their contents
+            name = System.Text.RegularExpressions.Regex.Replace(name, @"\([^)]*\)", "");
+            name = System.Text.RegularExpressions.Regex.Replace(name, @"\[[^\]]*\]", "");
+            
+            // Clean up extra whitespace
+            name = System.Text.RegularExpressions.Regex.Replace(name, @"\s+", " ").Trim();
+            
+            return name;
+        }
+        
         // Helper method to check current EventSystem selection as fallback
         public static void CheckCurrentUISelection()
         {
@@ -222,6 +377,25 @@ namespace AccessibilityMod
                     if (currentSelection != AccessibilityMod.lastSelectedUIObject)
                     {
                         AccessibilityMod.lastSelectedUIObject = currentSelection;
+                        
+                        // Extract text and speak it
+                        var text = currentSelection.GetComponentInChildren<UnityEngine.UI.Text>();
+                        var tmpText = currentSelection.GetComponentInChildren<TextMeshProUGUI>();
+                        string textContent = "";
+                        if (text != null) textContent = text.text;
+                        else if (tmpText != null) textContent = tmpText.text;
+                        
+                        if (!string.IsNullOrEmpty(textContent))
+                        {
+                            string speechText = NavigationHelper.FormatUIElementForSpeech(currentSelection, textContent);
+                            if (!string.IsNullOrEmpty(speechText) && speechText != AccessibilityMod.lastSpokenText)
+                            {
+                                TolkScreenReader.Instance.Speak(speechText, true);
+                                AccessibilityMod.lastSpokenText = speechText;
+                                AccessibilityMod.lastSpeechTime = Time.time;
+                            }
+                        }
+                        
                         NavigationHelper.LogUISelectionInfo(currentSelection, "EventSystem");
                     }
                 }
