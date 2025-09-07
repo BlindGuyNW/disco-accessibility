@@ -66,6 +66,18 @@
       <HintPath>$(DISCO_ELYSIUM_PATH)\MelonLoader\Il2CppAssemblies\UnityEngine.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(DISCO_ELYSIUM_PATH)\MelonLoader\Il2CppAssemblies\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(DISCO_ELYSIUM_PATH)\MelonLoader\Il2CppAssemblies\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2CppInControl">
+      <HintPath>$(DISCO_ELYSIUM_PATH)\MelonLoader\Il2CppAssemblies\Il2CppInControl.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
 
   <!-- Fallback references for when DISCO_ELYSIUM_PATH is not set -->
@@ -92,6 +104,18 @@
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Disco Elysium\MelonLoader\Il2CppAssemblies\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Disco Elysium\MelonLoader\Il2CppAssemblies\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Disco Elysium\MelonLoader\Il2CppAssemblies\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2CppInControl">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Disco Elysium\MelonLoader\Il2CppAssemblies\Il2CppInControl.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
