@@ -1,0 +1,5 @@
+# Ignore the decompiled source since it's static.
+disco/
+# DLLs and other build artifacts aren't efficient.
+*.dll
+*.pdb

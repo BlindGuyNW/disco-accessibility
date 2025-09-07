@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "vW+tcNXSNYmPMKM1iwIgKUQgd19wsIIhTjFpqhFnAXRG9VDLIZkdj1IJNg3uMGd5NScIOR3O0akWQf710heqnQ==",
+  "success": true,
+  "projectFilePath": "/home/zkline/elysium/mod/AccessibilityMod.csproj",
+  "expectedPackageFiles": [
+    "/home/zkline/.nuget/packages/microsoft.netcore.app.ref/6.0.36/microsoft.netcore.app.ref.6.0.36.nupkg.sha512",
+    "/home/zkline/.nuget/packages/microsoft.aspnetcore.app.ref/6.0.36/microsoft.aspnetcore.app.ref.6.0.36.nupkg.sha512"
+  ],
+  "logs": []
+}

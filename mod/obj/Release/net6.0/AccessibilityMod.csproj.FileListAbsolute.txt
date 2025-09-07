@@ -1,0 +1,10 @@
+/home/zkline/elysium/mod/obj/Release/net6.0/AccessibilityMod.csproj.AssemblyReference.cache
+/home/zkline/elysium/mod/obj/Release/net6.0/AccessibilityMod.GeneratedMSBuildEditorConfig.editorconfig
+/home/zkline/elysium/mod/obj/Release/net6.0/AccessibilityMod.csproj.CoreCompileInputs.cache
+/home/zkline/elysium/mod/bin/Release/net6.0/AccessibilityMod.deps.json
+/home/zkline/elysium/mod/bin/Release/net6.0/AccessibilityMod.dll
+/home/zkline/elysium/mod/bin/Release/net6.0/AccessibilityMod.pdb
+/home/zkline/elysium/mod/obj/Release/net6.0/AccessibilityMod.dll
+/home/zkline/elysium/mod/obj/Release/net6.0/refint/AccessibilityMod.dll
+/home/zkline/elysium/mod/obj/Release/net6.0/AccessibilityMod.pdb
+/home/zkline/elysium/mod/obj/Release/net6.0/ref/AccessibilityMod.dll
