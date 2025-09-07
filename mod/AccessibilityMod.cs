@@ -86,32 +86,21 @@ namespace AccessibilityMod
                     {
                         var name = selectable.gameObject.name;
                         
-                        // Get text from the button if it has any
-                        var text = selectable.GetComponentInChildren<UnityEngine.UI.Text>();
-                        var tmpText = selectable.GetComponentInChildren<TextMeshProUGUI>();
-                        
-                        string textContent = "";
-                        if (text != null) textContent = text.text;
-                        else if (tmpText != null) textContent = tmpText.text;
-                        
-                        if (!string.IsNullOrEmpty(textContent))
+                        if (lastSelectedUIObject == null || lastSelectedUIObject != selectable.gameObject)
                         {
-                            if (lastSelectedUIObject == null || lastSelectedUIObject != selectable.gameObject)
+                            lastSelectedUIObject = selectable.gameObject;
+                            
+                            // Extract text and format for speech with UI context
+                            string speechText = NavigationHelper.FormatUIElementForSpeech(selectable.gameObject);
+                            if (!string.IsNullOrEmpty(speechText) && speechText != lastSpokenText)
                             {
-                                lastSelectedUIObject = selectable.gameObject;
-                                
-                                // Speak the UI element with Tolk
-                                string speechText = NavigationHelper.FormatUIElementForSpeech(selectable.gameObject, textContent);
-                                if (!string.IsNullOrEmpty(speechText) && speechText != lastSpokenText)
-                                {
-                                    TolkScreenReader.Instance.Speak(speechText, true); // Interrupt for menu navigation
-                                    lastSpokenText = speechText;
-                                    lastSpeechTime = Time.time;
-                                }
-                                
-                                // Keep minimal logging for debugging
-                                LoggerInstance.Msg($"[UI DEBUG] {name}: '{textContent}'");
+                                TolkScreenReader.Instance.Speak(speechText, true); // Interrupt for menu navigation
+                                lastSpokenText = speechText;
+                                lastSpeechTime = Time.time;
                             }
+                                
+                            // Keep minimal logging for debugging
+                            LoggerInstance.Msg($"[UI DEBUG] {name}: '{speechText}'");
                         }
                     }
                 }
@@ -300,48 +289,148 @@ namespace AccessibilityMod
             }
         }
         
-        // Format UI elements for speech output
-        public static string FormatUIElementForSpeech(GameObject uiObject, string textContent)
+        // Extract the best text content from a UI object using all available methods
+        public static string ExtractBestTextContent(GameObject uiObject)
         {
             try
             {
-                if (string.IsNullOrEmpty(textContent)) return null;
+                if (uiObject == null) return null;
                 
-                // Clean up the text content
-                string speechText = textContent.Trim();
+                // Try direct text components first
+                var textComponent = uiObject.GetComponent<UnityEngine.UI.Text>();
+                if (textComponent != null && !string.IsNullOrEmpty(textComponent.text))
+                {
+                    return textComponent.text.Trim();
+                }
                 
-                // Add UI element type if it's useful context
+                var tmpText = uiObject.GetComponent<TextMeshProUGUI>();
+                if (tmpText != null && !string.IsNullOrEmpty(tmpText.text))
+                {
+                    return tmpText.text.Trim();
+                }
+                
+                var tmpTextPro = uiObject.GetComponent<TextMeshPro>();
+                if (tmpTextPro != null && !string.IsNullOrEmpty(tmpTextPro.text))
+                {
+                    return tmpTextPro.text.Trim();
+                }
+                
+                // Try child text components (for buttons, etc.)
+                var childText = uiObject.GetComponentInChildren<UnityEngine.UI.Text>();
+                if (childText != null && !string.IsNullOrEmpty(childText.text))
+                {
+                    return childText.text.Trim();
+                }
+                
+                var childTMP = uiObject.GetComponentInChildren<TextMeshProUGUI>();
+                if (childTMP != null && !string.IsNullOrEmpty(childTMP.text))
+                {
+                    return childTMP.text.Trim();
+                }
+                
+                var childTMPPro = uiObject.GetComponentInChildren<TextMeshPro>();
+                if (childTMPPro != null && !string.IsNullOrEmpty(childTMPPro.text))
+                {
+                    return childTMPPro.text.Trim();
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error extracting text content: {ex}");
+                return null;
+            }
+        }
+        
+        // Format UI elements for speech output (does its own text extraction + context)
+        public static string FormatUIElementForSpeech(GameObject uiObject)
+        {
+            try
+            {
+                if (uiObject == null) return null;
+                
+                // TODO: Add support for slider components when needed
+                // - LayoutProfileConfiguration for UI scaling sliders  
+                // - AudioConfigurationSliders for volume sliders
+                // - Individual *GraphicsOption components for graphics sliders
+                
+                // Extract text content for standard components
+                string speechText = ExtractBestTextContent(uiObject);
+                if (string.IsNullOrEmpty(speechText)) return null;
+                
+                speechText = speechText.Trim();
+                
+                // Check for Disco Elysium's OptionDropbox component
+                var optionDropbox = uiObject.GetComponent<Il2Cpp.OptionDropbox>();
+                if (optionDropbox != null)
+                {
+                    string settingName = optionDropbox.settingName;
+                    if (!string.IsNullOrEmpty(settingName))
+                    {
+                        return $"{settingName}: {speechText}";
+                    }
+                    else
+                    {
+                        return $"Dropdown: {speechText}";
+                    }
+                }
+                
+                // Add UI element type context for standard components
                 var button = uiObject.GetComponent<UnityEngine.UI.Button>();
                 if (button != null)
                 {
-                    speechText = $"Button: {speechText}";
+                    return $"Button: {speechText}";
                 }
                 
                 var toggle = uiObject.GetComponent<UnityEngine.UI.Toggle>();
                 if (toggle != null)
                 {
-                    speechText = $"Toggle {(toggle.isOn ? "checked" : "unchecked")}: {speechText}";
+                    return $"Toggle {(toggle.isOn ? "checked" : "unchecked")}: {speechText}";
                 }
                 
                 var slider = uiObject.GetComponent<UnityEngine.UI.Slider>();
                 if (slider != null)
                 {
                     int percentage = Mathf.RoundToInt(slider.normalizedValue * 100);
-                    speechText = $"Slider {percentage} percent: {speechText}";
+                    return $"Slider {percentage} percent: {speechText}";
                 }
                 
-                var dropdown = uiObject.GetComponent<UnityEngine.UI.Dropdown>();
-                if (dropdown != null && dropdown.options != null && dropdown.value < dropdown.options.Count)
+                // Check for TextMesh Pro dropdown
+                var tmpDropdown = uiObject.GetComponent<Il2CppTMPro.TMP_Dropdown>();
+                if (tmpDropdown != null)
                 {
-                    speechText = $"Dropdown: {dropdown.options[dropdown.value].text}";
+                    if (tmpDropdown.options != null && tmpDropdown.value >= 0 && tmpDropdown.value < tmpDropdown.options.Count)
+                    {
+                        return $"Dropdown: {speechText}, selected {tmpDropdown.options[tmpDropdown.value].text}";
+                    }
+                    else
+                    {
+                        return $"Dropdown: {speechText}";
+                    }
                 }
                 
+                // Check for standard Unity dropdown (fallback)
+                var dropdown = uiObject.GetComponent<UnityEngine.UI.Dropdown>();
+                if (dropdown != null)
+                {
+                    if (dropdown.options != null && dropdown.value >= 0 && dropdown.value < dropdown.options.Count)
+                    {
+                        return $"Dropdown: {speechText}, selected {dropdown.options[dropdown.value].text}";
+                    }
+                    else
+                    {
+                        return $"Dropdown: {speechText}";
+                    }
+                }
+                
+                // Default: just return the text without additional context
                 return speechText;
             }
             catch (Exception ex)
             {
                 MelonLogger.Error($"Error formatting UI element for speech: {ex}");
-                return textContent; // Fall back to raw text
+                return ExtractBestTextContent(uiObject);
             }
         }
         
@@ -378,16 +467,10 @@ namespace AccessibilityMod
                     {
                         AccessibilityMod.lastSelectedUIObject = currentSelection;
                         
-                        // Extract text and speak it
-                        var text = currentSelection.GetComponentInChildren<UnityEngine.UI.Text>();
-                        var tmpText = currentSelection.GetComponentInChildren<TextMeshProUGUI>();
-                        string textContent = "";
-                        if (text != null) textContent = text.text;
-                        else if (tmpText != null) textContent = tmpText.text;
-                        
-                        if (!string.IsNullOrEmpty(textContent))
+                        // Extract text and format for speech with UI context  
+                        string speechText = NavigationHelper.FormatUIElementForSpeech(currentSelection);
+                        if (!string.IsNullOrEmpty(speechText))
                         {
-                            string speechText = NavigationHelper.FormatUIElementForSpeech(currentSelection, textContent);
                             if (!string.IsNullOrEmpty(speechText) && speechText != AccessibilityMod.lastSpokenText)
                             {
                                 TolkScreenReader.Instance.Speak(speechText, true);
