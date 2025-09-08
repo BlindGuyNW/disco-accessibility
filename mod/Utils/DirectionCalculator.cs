@@ -27,6 +27,23 @@ namespace AccessibilityMod.Utils
             return Vector3.Distance(from, to);
         }
 
+        /// <summary>
+        /// Calculate a reachability-weighted distance that prioritizes same-level objects.
+        /// This heavily penalizes vertical differences to ensure ground-level doors 
+        /// appear before elevated unreachable ones in navigation lists.
+        /// </summary>
+        public static float CalculateReachabilityWeightedDistance(Vector3 from, Vector3 to)
+        {
+            float horizontalDistance = Mathf.Sqrt((to.x - from.x) * (to.x - from.x) + (to.z - from.z) * (to.z - from.z));
+            float verticalDistance = Mathf.Abs(to.y - from.y);
+            
+            // Apply heavy penalty for vertical separation
+            // Objects more than 2 meters above/below are heavily penalized
+            float verticalPenalty = verticalDistance > 2f ? verticalDistance * 10f : verticalDistance * 2f;
+            
+            return horizontalDistance + verticalPenalty;
+        }
+
         public static string FormatDistance(float distance)
         {
             return $"{distance:F0} meters";

@@ -107,7 +107,8 @@ namespace AccessibilityMod.Navigation
             string[] locationPatterns = {
                 "door", "entrance", "exit", "gate", "passage", "stairway", "stairs",
                 "kineema", "car", "vehicle", "monument", "terminal", "phone", "booth",
-                "building", "cabin", "shack", "harbor", "pier", "bridge"
+                "building", "cabin", "shack", "harbor", "pier", "bridge",
+                "kiosque", "outline", "rooftop", "balcony", "doorway"
             };
             
             foreach (string pattern in locationPatterns)

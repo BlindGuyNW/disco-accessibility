@@ -57,12 +57,12 @@ namespace AccessibilityMod.Navigation
                     categorizedObjects[objCategory].Add(obj);
                 }
                 
-                // Sort each category by distance
+                // Sort each category by reachability-weighted distance to prioritize ground-level objects
                 foreach (var categoryList in categorizedObjects.Values)
                 {
                     categoryList.Sort((a, b) => 
-                        Vector3.Distance(playerPos, a.transform.position)
-                        .CompareTo(Vector3.Distance(playerPos, b.transform.position)));
+                        DirectionCalculator.CalculateReachabilityWeightedDistance(playerPos, a.transform.position)
+                        .CompareTo(DirectionCalculator.CalculateReachabilityWeightedDistance(playerPos, b.transform.position)));
                 }
                 
                 // Switch to selected category and reset selection
