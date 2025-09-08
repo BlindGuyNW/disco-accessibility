@@ -30,6 +30,20 @@ namespace AccessibilityMod
         {
             LoggerInstance.Msg("Accessibility Mod initializing...");
             
+            // Move mouse cursor to safe position to prevent UI interference
+            try
+            {
+                // Move mouse to bottom-right corner where there's typically no UI
+                Cursor.SetCursor(null, new Vector2(Screen.width - 10, Screen.height - 10), CursorMode.Auto);
+                // Also try to set the actual mouse position if possible
+                Input.mousePosition.Set(Screen.width - 10, Screen.height - 10, 0);
+                LoggerInstance.Msg("Mouse cursor repositioned to safe area");
+            }
+            catch (Exception ex)
+            {
+                LoggerInstance.Warning($"Could not reposition mouse cursor: {ex.Message}");
+            }
+            
             // Initialize Tolk screen reader
             if (TolkScreenReader.Instance.Initialize())
             {
@@ -72,6 +86,18 @@ namespace AccessibilityMod
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
             LoggerInstance.Msg($"Scene loaded: {sceneName} (Index: {buildIndex})");
+            
+            // Reposition mouse cursor when scene loads to prevent UI interference
+            try
+            {
+                // Move to corner where there's typically no UI
+                Cursor.SetCursor(null, new Vector2(Screen.width - 10, Screen.height - 10), CursorMode.Auto);
+                LoggerInstance.Msg("Mouse cursor repositioned after scene load");
+            }
+            catch (Exception ex)
+            {
+                LoggerInstance.Warning($"Could not reposition mouse after scene load: {ex.Message}");
+            }
         }
         
         public override void OnUpdate()

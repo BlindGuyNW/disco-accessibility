@@ -4,46 +4,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a MelonLoader mod for Disco Elysium that provides accessibility features, including object detection in the game world and menu navigation tracking for screen reader integration. The mod uses Harmony patches to intercept both the game's interaction system and custom UI navigation system to extract information about objects and UI elements the player is interacting with.
+This is a MelonLoader mod for Disco Elysium that provides comprehensive accessibility features for visually impaired players. The mod transforms the game's navigation from visual-dependent interactions into audio-guided, automated systems. Core features include smart object categorization, automated character movement using the game's pathfinding, scene-wide object registry access, and screen reader integration via Tolk.
+
+The mod bypasses the game's limited visual selection system (5 nearby objects) by accessing the global MouseOverHighlight registry (300+ scene objects) and provides intelligent categorization, filtering, and automated navigation.
 
 ## Architecture
 
 ### Core Components
 
-**MelonLoader Integration**: The mod uses MelonLoader's mod framework with the correct game identifiers:
-- Developer: "ZAUM Studio" 
-- Game: "Disco Elysium"
+**MelonLoader Integration**: Uses MelonLoader framework with correct game identifiers (ZAUM Studio / Disco Elysium).
 
-**Dual Patching System**: The mod patches both world interaction and UI navigation:
+**Smart Navigation System**: The primary accessibility feature providing categorized object selection and automated movement:
 
-**World Object Detection**:
-- `InteractableSelectionManager.OnUpdate()` - Detects when object selection changes
-- `InteractableSelectionManager.set_CurrentSelected` - Alternative hook for selection changes  
-- `InteractableSelectionManager.Add()` - Monitors when objects are added to selection
+**Object Registry Access**:
+- `MouseOverHighlight.registry` - Global scene object registry (300+ objects vs 5 from InteractableSelectionManager)
+- Bypasses game's limited visual selection range for scene-wide awareness
+- Provides foundation for virtual exploration without character movement
 
-**Menu Navigation Tracking**:
-- `INavigationReceiver.SelectNext()` - Detects controller navigation (right/down)
-- `INavigationReceiver.SelectPrevious()` - Detects controller navigation (left/up)
-- `UIScrollToSelection.Update()` - Tracks current UI selection state
+**Categorized Object Selection**:
+- **NPCs** (`[` key): Interactive characters excluding Kim (who follows player)  
+- **Locations** (`]` key): Doors, exits, vehicles, story objects
+- **Loot** (`\` key): Containers, money, searchable items with clutter filtering
+- **Everything** (`=` key): Fallback category with distance limiting
 
-**Object Detection**: The mod extracts detailed information from multiple object types:
-- `OrbUiElement` - Skill checks, thoughts, dice rolls
-- `MouseOverHighlight` - NPCs, environment objects, items
-- UI Elements - Buttons, toggles, sliders, dropdowns with text content
+**Automated Movement System**:
+- Uses `Character.SetDestination()` with proper Il2Cpp parameter marshalling
+- Real-time movement monitoring with distance announcements
+- Handles pathfinding failures gracefully with directional guidance fallback
+- Emergency stop functionality (`/` key)
+
+**Legacy Systems** (still functional):
+- UI navigation tracking via `INavigationReceiver` patches
+- Object detection for `OrbUiElement` skill checks and `MouseOverHighlight` objects
+- Menu navigation monitoring for screen reader integration
 
 ### Key Game Classes
 
-**World Interaction Classes**:
-- `InteractableSelectionManager` - Main selection system
-- `CommonPadInteractable` - Wrapper for all interactable objects
-- `Character` - Player character reference
-- `GameEntity` - Game-specific entity data
+**Critical for Navigation System**:
+- `MouseOverHighlight` - Contains global registry of all interactable objects (`MouseOverHighlight.registry`)
+- `Character` - Player character with `SetDestination()` method for automated movement and `movementStatus` tracking
+- `GameEntity` - Provides richer object names via `GetFirstActive()` method
+- `MovementMode` (Il2CppSunshine) - Enum for movement types (WALK, AUTOMATIC, etc.)
 
-**UI Navigation Classes**:
-- `INavigationReceiver` - Interface for custom menu navigation
+**Core Interaction Classes**:
+- `InteractableSelectionManager` - Limited-range selection system (legacy, still used for tracking)
+- `CommonPadInteractable` - Wrapper for interactable objects
+- `CharacterAnalogueControl` - Contains movement validation and pathfinding utilities
+
+**UI Navigation Classes** (for future development):
+- `INavigationReceiver` - Interface for custom menu navigation  
 - `NavigationInputHandler` - Base class for controller input handling
 - `UIScrollToSelection` - Unity extension for tracking UI selection
-- `DialogueNavigationInputHandler`, `OperationsNavigationInputHandler` - Specific navigation handlers
+- Dialog-specific handlers: `DialogueNavigationInputHandler`, `OperationsNavigationInputHandler`
 
 ## Development Commands
 
@@ -62,12 +74,22 @@ The build system:
 
 ### Testing
 
-**World Object Detection**:
+**Smart Navigation System**:
 1. Launch Disco Elysium (MelonLoader loads the mod automatically)
-2. MelonLoader console window shows mod output
-3. Move cursor over objects in-game to see detection logs
+2. Press categorization hotkeys to browse objects:
+   - `[` - NPCs: Should show 1-3 characters excluding Kim
+   - `]` - Locations: Should show doors, exits, vehicles (typically 2-6 objects)  
+   - `\` - Loot: Should show containers, money with clutter filtering (typically 2-8 objects)
+   - `=` - Everything: Should show nearest 10 objects with distance limiting
+3. Press hotkey again to navigate to selected object with automated movement
+4. Watch console for movement progress and pathfinding status
+5. Use `/` for emergency stop if needed
 
-**Menu Navigation Testing**:
+**World Object Detection** (Legacy):
+1. Move cursor over objects in-game to see detection logs in console
+2. Verify both Orb and MouseOverHighlight object types are detected
+
+**Menu Navigation Testing** (Legacy):
 1. Use controller D-pad/stick to navigate menus (main menu, options, inventory, etc.)
 2. Watch console for `[NAVIGATION]` and `[UIScrollToSelection]` messages
 3. Each navigation action should log the selected UI element's details
@@ -109,10 +131,54 @@ public class PatchClassName
 
 ## Critical Implementation Details
 
+### Smart Navigation System Architecture
+
+**Object Categorization Logic**:
+```csharp
+public enum ObjectCategory
+{
+    NPCs = 1,           // Interactive NPCs (excluding Kim)
+    Locations = 2,      // Doors, exits, vehicles, story objects
+    Loot = 3,          // Containers, money, pickuppable items
+    Everything = 4      // Fallback category with distance limiting
+}
+```
+
+**Registry Access Pattern**:
+- Access global scene objects via `MouseOverHighlight.registry` (Il2CppSystem.Collections.Generic.List)
+- Filter by distance, category, and interaction relevance
+- Enhanced object naming via `GameEntity.GetFirstActive()` method
+- Clutter filtering excludes "Trash", generic containers, and environmental decorations
+
+**Automated Movement Implementation**:
+```csharp
+// Character detection with robust error handling
+private Character GetPlayerCharacter()
+{
+    return Object.FindObjectOfType<Character>();
+}
+
+// Il2Cpp parameter marshalling for SetDestination
+var nullableHeading = new Il2CppSystem.Nullable<float>();
+character.SetDestination(destination, nullableHeading, MovementMode.WALK, false);
+```
+
+**Movement Monitoring System**:
+- Real-time distance tracking with progress announcements
+- Movement state detection via `character.movementStatus` enum
+- Pathfinding failure detection and fallback guidance
+- Emergency stop functionality with movement interruption
+
+**Hotkey Safety**:
+- Uses punctuation keys (`[`, `]`, `\`, `=`, `/`) to avoid game function conflicts
+- Avoids letter keys that may conflict with dialogue choices or game commands
+- Safe key selection verified through game testing
+
 ### Assembly References
 The mod requires specific Il2Cpp assemblies. Key dependencies include:
 - `Unity.TextMeshPro.dll` - Required for TextMeshPro component access in UI elements
 - `Il2CppInControl.dll` - Required for controller input types
+- `Il2CppSunshine.dll` - Required for MovementMode enum and character control types
 - Missing references will cause compile errors for specific component types
 
 ### Information Extraction Patterns
@@ -161,8 +227,27 @@ When working on menu navigation features, key areas to investigate in the `disco
 
 ## Future Development Paths
 
-The current logging system provides foundation for:
-- **Tolk integration** for screen reader announcements of both world objects and UI elements
-- **Spatial audio cues** using world position coordinates for game objects  
-- **Configuration system** for user preferences
-- **Enhanced UI navigation** with better selection feedback and alternative input methods
+With the smart navigation system now fully implemented, potential areas for accessibility expansion include:
+
+**Dialogue System Accessibility**:
+- Automated navigation through dialogue trees using Tolk announcements
+- Integration with `DialogueNavigationInputHandler` and `CollageDialogue` classes
+- Speech-to-text for dialogue choices or audio cue navigation
+- Core to gameplay since most of Disco Elysium consists of dialogue interactions
+
+**Character Sheet and Inventory Systems**:
+- Voice navigation for skill point allocation and character progression
+- Automated inventory organization and item identification
+- Integration with `InventoryItemsPage` and character stat panels
+- Audio feedback for item properties and character development choices
+
+**Page System Navigation**:
+- Enhanced navigation for the game's "page" system (journal, thoughts, tasks)
+- Screen reader integration for thought cabinet and case progression
+- Audio cues for completed vs. incomplete tasks and investigation progress
+
+**Advanced Features**:
+- **Configuration system** for user-customizable hotkeys and preferences
+- **Spatial audio cues** using world position coordinates for enhanced environmental awareness  
+- **Voice command integration** for hands-free navigation and interaction
+- **Save/load state management** with audio feedback for game state awareness
