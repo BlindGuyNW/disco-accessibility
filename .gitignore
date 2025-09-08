@@ -3,3 +3,5 @@ disco/
 # DLLs and other build artifacts aren't efficient.
 *.dll
 *.pdb
+mod/bin/
+mod/obj/
