@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Il2CppTMPro;
 using Il2Cpp;
+using Il2CppSunshine;
 using AccessibilityMod.Utils;
 using MelonLoader;
 
@@ -131,7 +132,14 @@ namespace AccessibilityMod.UI
             {
                 if (uiObject == null) return null;
                 
-                // Check for confirmation dialog elements first (high priority)
+                // Check for Disco Elysium dialog response buttons first (highest priority)
+                string dialogText = GetDialogResponseText(uiObject);
+                if (!string.IsNullOrEmpty(dialogText))
+                {
+                    return dialogText;
+                }
+                
+                // Check for confirmation dialog elements (high priority)
                 string confirmationText = GetConfirmationTextContext(uiObject);
                 if (!string.IsNullOrEmpty(confirmationText))
                 {
@@ -610,6 +618,94 @@ namespace AccessibilityMod.UI
             {
                 MelonLogger.Error($"Error formatting slider value: {ex}");
                 return $"{Mathf.RoundToInt(slider.normalizedValue * 100)}%";
+            }
+        }
+
+        private static string GetDialogResponseText(GameObject uiObject)
+        {
+            try
+            {
+                if (uiObject == null) return null;
+
+                // Check for SunshineResponseButton component (Disco Elysium's dialog choices)
+                var responseButton = uiObject.GetComponent<Il2Cpp.SunshineResponseButton>();
+                if (responseButton != null)
+                {
+                    return FormatDialogResponseText(responseButton);
+                }
+
+                // Also check if this might be a child of a response button
+                var parentResponseButton = uiObject.GetComponentInParent<Il2Cpp.SunshineResponseButton>();
+                if (parentResponseButton != null)
+                {
+                    return FormatDialogResponseText(parentResponseButton);
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error getting dialog response text: {ex}");
+                return null;
+            }
+        }
+
+        public static string FormatDialogResponseText(Il2Cpp.SunshineResponseButton responseButton)
+        {
+            try
+            {
+                if (responseButton == null) return null;
+
+                string dialogText = "";
+                string skillCheckInfo = "";
+
+                // Extract the main dialog text from optionText
+                if (responseButton.optionText != null)
+                {
+                    // Try to get text from the textField component
+                    if (responseButton.optionText.textField != null && !string.IsNullOrEmpty(responseButton.optionText.textField.text))
+                    {
+                        dialogText = responseButton.optionText.textField.text.Trim();
+                    }
+                    // Fallback to originalText property
+                    else if (!string.IsNullOrEmpty(responseButton.optionText.originalText))
+                    {
+                        dialogText = responseButton.optionText.originalText.Trim();
+                    }
+                }
+
+                // Check for skill check information
+                bool isWhiteCheck = responseButton.whiteCheck;
+                bool isRedCheck = responseButton.redCheck;
+
+                if (isWhiteCheck || isRedCheck)
+                {
+                    // For now, we'll identify skill checks by type
+                    // TODO: Extract specific skill check details if available
+                    string checkType = isWhiteCheck ? "White Check" : "Red Check";
+                    skillCheckInfo = checkType;
+                }
+
+                // Combine skill check info with dialog text
+                if (!string.IsNullOrEmpty(skillCheckInfo) && !string.IsNullOrEmpty(dialogText))
+                {
+                    return $"{skillCheckInfo}: {dialogText}";
+                }
+                else if (!string.IsNullOrEmpty(skillCheckInfo))
+                {
+                    return skillCheckInfo;
+                }
+                else if (!string.IsNullOrEmpty(dialogText))
+                {
+                    return $"Dialog: {dialogText}";
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error formatting dialog response text: {ex}");
+                return null;
             }
         }
     }

@@ -42,9 +42,17 @@ namespace AccessibilityMod.UI
                                     lastSpokenText = speechText;
                                     lastSpeechTime = Time.time;
                                 }
-                                    
-                                // Keep minimal logging for debugging
-                                MelonLogger.Msg($"[UI DEBUG] {name}: '{speechText}'");
+                                
+                                // Enhanced logging for dialog detection
+                                if (speechText?.StartsWith("Dialog:") == true || speechText?.Contains("Check") == true)
+                                {
+                                    MelonLogger.Msg($"[DIALOG DEBUG] {name}: '{speechText}'");
+                                }
+                                else
+                                {
+                                    // Keep minimal logging for non-dialog UI
+                                    MelonLogger.Msg($"[UI DEBUG] {name}: '{speechText}'");
+                                }
                             }
                         }
                     }
@@ -83,7 +91,15 @@ namespace AccessibilityMod.UI
                             }
                         }
                         
-                        LogUISelectionInfo(currentSelection, "EventSystem");
+                        // Enhanced logging for dialog detection via EventSystem
+                        if (speechText?.StartsWith("Dialog:") == true || speechText?.Contains("Check") == true)
+                        {
+                            LogUISelectionInfo(currentSelection, "EventSystem-Dialog");
+                        }
+                        else
+                        {
+                            LogUISelectionInfo(currentSelection, "EventSystem");
+                        }
                     }
                 }
             }

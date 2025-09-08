@@ -21,6 +21,18 @@ namespace AccessibilityMod
         {
             LoggerInstance.Msg("Accessibility Mod initializing...");
             
+            // Initialize Harmony patches
+            try
+            {
+                var harmony = new HarmonyLib.Harmony("com.accessibility.discoelysium");
+                harmony.PatchAll();
+                LoggerInstance.Msg("Harmony patches applied successfully");
+            }
+            catch (Exception ex)
+            {
+                LoggerInstance.Error($"Failed to apply Harmony patches: {ex}");
+            }
+            
             // Move mouse cursor to safe position to prevent UI interference
             try
             {
