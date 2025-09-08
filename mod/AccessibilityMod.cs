@@ -1267,25 +1267,52 @@ namespace AccessibilityMod
             {
                 if (uiObject == null) return null;
                 
-                // TODO: Add support for slider components when needed
-                // - LayoutProfileConfiguration for UI scaling sliders  
-                // - AudioConfigurationSliders for volume sliders
-                // - Individual *GraphicsOption components for graphics sliders
+                // Check for confirmation dialog elements first (high priority)
+                string confirmationText = GetConfirmationTextContext(uiObject);
+                if (!string.IsNullOrEmpty(confirmationText))
+                {
+                    return confirmationText;
+                }
+                
+                // Enhanced slider support with context detection
+                var slider = uiObject.GetComponent<UnityEngine.UI.Slider>();
+                if (slider != null)
+                {
+                    string sliderInfo = GetEnhancedSliderInfo(slider, uiObject);
+                    if (!string.IsNullOrEmpty(sliderInfo))
+                    {
+                        return sliderInfo;
+                    }
+                }
                 
                 // Extract text content for standard components
                 string speechText = ExtractBestTextContent(uiObject);
-                if (string.IsNullOrEmpty(speechText)) return null;
+                
+                // Handle sliders that don't have text content (common case)
+                if (string.IsNullOrEmpty(speechText))
+                {
+                    var sliderComponent = uiObject.GetComponent<UnityEngine.UI.Slider>();
+                    if (sliderComponent != null)
+                    {
+                        string sliderInfo = GetEnhancedSliderInfo(sliderComponent, uiObject);
+                        if (!string.IsNullOrEmpty(sliderInfo))
+                        {
+                            return sliderInfo;
+                        }
+                    }
+                    return null;
+                }
                 
                 speechText = speechText.Trim();
                 
-                // Check for Disco Elysium's OptionDropbox component
+                // Check for Disco Elysium's OptionDropbox component (base class for many dropdowns)
                 var optionDropbox = uiObject.GetComponent<Il2Cpp.OptionDropbox>();
                 if (optionDropbox != null)
                 {
-                    string settingName = optionDropbox.settingName;
-                    if (!string.IsNullOrEmpty(settingName))
+                    string dropdownName = GetDropdownName(optionDropbox, uiObject);
+                    if (!string.IsNullOrEmpty(dropdownName))
                     {
-                        return $"{settingName}: {speechText}";
+                        return $"{dropdownName}: {speechText}";
                     }
                     else
                     {
@@ -1297,6 +1324,13 @@ namespace AccessibilityMod
                 var button = uiObject.GetComponent<UnityEngine.UI.Button>();
                 if (button != null)
                 {
+                    // Check if this button is part of a confirmation dialog
+                    string confirmationContext = GetConfirmationButtonContext(button, uiObject);
+                    if (!string.IsNullOrEmpty(confirmationContext))
+                    {
+                        return confirmationContext;
+                    }
+                    
                     return $"Button: {speechText}";
                 }
                 
@@ -1306,39 +1340,40 @@ namespace AccessibilityMod
                     return $"Toggle {(toggle.isOn ? "checked" : "unchecked")}: {speechText}";
                 }
                 
-                var slider = uiObject.GetComponent<UnityEngine.UI.Slider>();
-                if (slider != null)
+                // Enhanced slider handling with text context
+                var sliderWithText = uiObject.GetComponent<UnityEngine.UI.Slider>();
+                if (sliderWithText != null)
                 {
-                    int percentage = Mathf.RoundToInt(slider.normalizedValue * 100);
-                    return $"Slider {percentage} percent: {speechText}";
+                    string sliderInfo = GetEnhancedSliderInfo(sliderWithText, uiObject);
+                    if (!string.IsNullOrEmpty(sliderInfo))
+                    {
+                        // If we have both slider info and text, combine them
+                        return string.IsNullOrEmpty(speechText) ? sliderInfo : $"{sliderInfo} - {speechText}";
+                    }
+                    
+                    // Fallback for sliders we couldn't identify
+                    int percentage = Mathf.RoundToInt(sliderWithText.normalizedValue * 100);
+                    return $"Slider {percentage}%: {speechText}";
                 }
                 
-                // Check for TextMesh Pro dropdown
+                // Check for TextMesh Pro dropdown (for dropdowns that don't use OptionDropbox)
                 var tmpDropdown = uiObject.GetComponent<Il2CppTMPro.TMP_Dropdown>();
                 if (tmpDropdown != null)
                 {
-                    if (tmpDropdown.options != null && tmpDropdown.value >= 0 && tmpDropdown.value < tmpDropdown.options.Count)
-                    {
-                        return $"Dropdown: {speechText}, selected {tmpDropdown.options[tmpDropdown.value].text}";
-                    }
-                    else
-                    {
-                        return $"Dropdown: {speechText}";
-                    }
+                    string dropdownName = GetTMPDropdownName(tmpDropdown, uiObject);
+                    string prefix = !string.IsNullOrEmpty(dropdownName) ? dropdownName : "Dropdown";
+                    
+                    // For dropdowns, speechText should already be the selected value
+                    // No need to say "selected" since that's what a dropdown shows
+                    return $"{prefix}: {speechText}";
                 }
                 
                 // Check for standard Unity dropdown (fallback)
                 var dropdown = uiObject.GetComponent<UnityEngine.UI.Dropdown>();
                 if (dropdown != null)
                 {
-                    if (dropdown.options != null && dropdown.value >= 0 && dropdown.value < dropdown.options.Count)
-                    {
-                        return $"Dropdown: {speechText}, selected {dropdown.options[dropdown.value].text}";
-                    }
-                    else
-                    {
-                        return $"Dropdown: {speechText}";
-                    }
+                    // For dropdowns, speechText should already be the selected value
+                    return $"Dropdown: {speechText}";
                 }
                 
                 // Default: just return the text without additional context
@@ -1348,6 +1383,477 @@ namespace AccessibilityMod
             {
                 MelonLogger.Error($"Error formatting UI element for speech: {ex}");
                 return ExtractBestTextContent(uiObject);
+            }
+        }
+        
+        // Get meaningful dropdown names by checking component types and singletons
+        private static string GetDropdownName(Il2Cpp.OptionDropbox optionDropbox, GameObject uiObject)
+        {
+            try
+            {
+                // First check if settingName is already meaningful
+                string settingName = optionDropbox.settingName;
+                if (!string.IsNullOrEmpty(settingName))
+                {
+                    // Fix spacing in "VoiceOver Mode" if needed
+                    if (settingName.Equals("VoiceOverMode", StringComparison.OrdinalIgnoreCase))
+                    {
+                        settingName = "Voice Over Mode";
+                    }
+                    
+                    // Some settings already have good names (like "Voice Over Mode")
+                    // Don't duplicate if it already contains the word "mode", "setting", etc.
+                    string lowerSetting = settingName.ToLower();
+                    if (lowerSetting.Contains("mode") || lowerSetting.Contains("option") || 
+                        lowerSetting.Contains("setting") || lowerSetting.Contains("language"))
+                    {
+                        // Add context for VoiceOver mode options
+                        var voModeOption = optionDropbox as Il2Cpp.VoiceOverModeOption;
+                        if (voModeOption != null)
+                        {
+                            return "Voice Over Mode";
+                        }
+                        
+                        return settingName;
+                    }
+                }
+                
+                // Check if this is a specific dropdown type via inheritance
+                // Resolution dropdown (ResolutionSwitcher uses TMP_Dropdown directly, not OptionDropbox)
+                // But check parent for context
+                if (uiObject.name.ToLower().Contains("resolution"))
+                {
+                    return "Resolution";
+                }
+                
+                // Display Mode dropdown
+                var displayMode = optionDropbox as Il2Cpp.DisplayModeOption;
+                if (displayMode != null)
+                {
+                    return "Display Mode";
+                }
+                
+                // Text Language dropdown (LocalizationSettingsOption)
+                var localization = UnityEngine.Object.FindObjectOfType<Il2CppLocalizationCustomSystem.LocalizationSettingsOption>();
+                if (localization != null && localization.dropdown != null)
+                {
+                    // Check if this dropdown is the text language selector
+                    var tmpDropdown = uiObject.GetComponent<Il2CppTMPro.TMP_Dropdown>();
+                    if (tmpDropdown != null && tmpDropdown == localization.dropdown)
+                    {
+                        return "Text Language";
+                    }
+                }
+                
+                // Voice Over Language dropdown (SwitchableLocalizationSettingsOption)
+                var switchableLocalization = UnityEngine.Object.FindObjectOfType<Il2CppLocalizationCustomSystem.SwitchableLocalizationSettingsOption>();
+                if (switchableLocalization != null && switchableLocalization.dropdown != null)
+                {
+                    var tmpDropdown = uiObject.GetComponent<Il2CppTMPro.TMP_Dropdown>();
+                    if (tmpDropdown != null && tmpDropdown == switchableLocalization.dropdown)
+                    {
+                        return "Voice Over Language";
+                    }
+                }
+                
+                // Check parent name for context
+                var parent = uiObject.transform.parent;
+                if (parent != null)
+                {
+                    string parentName = parent.name.ToLower();
+                    if (parentName.Contains("language")) return "Language";
+                    if (parentName.Contains("resolution")) return "Resolution";
+                    if (parentName.Contains("display")) return "Display Mode";
+                    if (parentName.Contains("voiceover")) return "VoiceOver Mode";
+                    if (parentName.Contains("graphics")) return "Graphics Option";
+                    if (parentName.Contains("shadow")) return "Shadow Quality";
+                    if (parentName.Contains("antialias")) return "Anti-aliasing";
+                }
+                
+                // Return settingName if we have it, even if not perfect
+                if (!string.IsNullOrEmpty(settingName))
+                {
+                    return settingName;
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error getting dropdown name: {ex}");
+                return null;
+            }
+        }
+        
+        // Get context for confirmation dialog buttons
+        private static string GetConfirmationButtonContext(UnityEngine.UI.Button button, GameObject uiObject)
+        {
+            try
+            {
+                // Find the ConfirmationController singleton
+                var confirmationController = UnityEngine.Object.FindObjectOfType<Il2Cpp.ConfirmationController>();
+                if (confirmationController == null || !confirmationController.IsVisible)
+                {
+                    return null;
+                }
+                
+                // Check if this button is the Confirm button
+                if (confirmationController.Confirm == button)
+                {
+                    string message = "";
+                    if (confirmationController.Text != null)
+                    {
+                        message = confirmationController.Text.text;
+                    }
+                    
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        return $"Confirm: {message}";
+                    }
+                    else
+                    {
+                        return "Confirm Button";
+                    }
+                }
+                
+                // Check if this button is the Cancel button
+                if (confirmationController.Cancel == button)
+                {
+                    string message = "";
+                    if (confirmationController.Text != null)
+                    {
+                        message = confirmationController.Text.text;
+                    }
+                    
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        return $"Cancel: {message}";
+                    }
+                    else
+                    {
+                        return "Cancel Button";
+                    }
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error getting confirmation button context: {ex}");
+                return null;
+            }
+        }
+        
+        // Check if a text element is part of a confirmation dialog
+        private static string GetConfirmationTextContext(GameObject uiObject)
+        {
+            try
+            {
+                var confirmationController = UnityEngine.Object.FindObjectOfType<Il2Cpp.ConfirmationController>();
+                if (confirmationController == null || !confirmationController.IsVisible)
+                {
+                    return null;
+                }
+                
+                // Check if this is the main text of the confirmation dialog
+                var textComponent = uiObject.GetComponent<UnityEngine.UI.Text>();
+                if (textComponent != null && confirmationController.Text == textComponent)
+                {
+                    return $"Confirmation: {textComponent.text}";
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error getting confirmation text context: {ex}");
+                return null;
+            }
+        }
+        
+        // Get name for TMP_Dropdown components that don't use OptionDropbox (like Resolution)
+        private static string GetTMPDropdownName(Il2CppTMPro.TMP_Dropdown dropdown, GameObject uiObject)
+        {
+            try
+            {
+                // Check if this is the Resolution dropdown
+                var resolutionSwitcher = UnityEngine.Object.FindObjectOfType<Il2Cpp.ResolutionSwitcher>();
+                if (resolutionSwitcher != null && resolutionSwitcher._dd == dropdown)
+                {
+                    return "Resolution";
+                }
+                
+                // Check if this is the Text Language dropdown  
+                var localization = UnityEngine.Object.FindObjectOfType<Il2CppLocalizationCustomSystem.LocalizationSettingsOption>();
+                if (localization != null && localization.dropdown == dropdown)
+                {
+                    return "Text Language";
+                }
+                
+                // Check if this is the Voice Over Language dropdown
+                var switchableLocalization = UnityEngine.Object.FindObjectOfType<Il2CppLocalizationCustomSystem.SwitchableLocalizationSettingsOption>();
+                if (switchableLocalization != null && switchableLocalization.dropdown == dropdown)
+                {
+                    return "Voice Over Language";
+                }
+                
+                // Check GameObject name and parent for context
+                string objName = uiObject.name.ToLower();
+                if (objName.Contains("resolution")) return "Resolution";
+                if (objName.Contains("language")) return "Language";
+                if (objName.Contains("display")) return "Display Mode";
+                
+                var parent = uiObject.transform.parent;
+                if (parent != null)
+                {
+                    string parentName = parent.name.ToLower();
+                    if (parentName.Contains("resolution")) return "Resolution";
+                    if (parentName.Contains("language")) return "Language";
+                    if (parentName.Contains("display")) return "Display Mode";
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error getting TMP dropdown name: {ex}");
+                return null;
+            }
+        }
+        
+        // Enhanced slider information extraction with context detection
+        private static string GetEnhancedSliderInfo(UnityEngine.UI.Slider slider, GameObject uiObject)
+        {
+            try
+            {
+                if (slider == null || uiObject == null) return null;
+                
+                string sliderName = "Slider";
+                string value = "";
+                
+                // Try to get slider name from various sources
+                sliderName = TryGetSliderNameFromSingletons(slider, uiObject) ?? 
+                            TryGetSliderNameFromParent(uiObject) ?? 
+                            TryGetSliderNameFromGameObject(uiObject) ?? 
+                            "Slider";
+                
+                // Format the value contextually
+                value = FormatSliderValue(slider, sliderName);
+                
+                return $"{sliderName}: {value}";
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error getting enhanced slider info: {ex}");
+                // Fallback to basic slider info
+                int percentage = Mathf.RoundToInt(slider.normalizedValue * 100);
+                return $"Slider: {percentage}%";
+            }
+        }
+        
+        // Try to identify slider from singleton components
+        private static string TryGetSliderNameFromSingletons(UnityEngine.UI.Slider slider, GameObject uiObject)
+        {
+            try
+            {
+                // Check AudioConfigurationSliders singleton
+                var audioConfig = UnityEngine.Object.FindObjectOfType<Il2Cpp.AudioConfigurationSliders>();
+                if (audioConfig != null)
+                {
+                    if (audioConfig.spatialsourceSlider == slider) return "Spatial Volume";
+                    if (audioConfig.uiSlider == slider) return "UI Volume"; 
+                    if (audioConfig.musicSlider == slider) return "Music Volume";
+                    if (audioConfig.voiceoverSlider == slider) return "Voiceover Volume";
+                    if (audioConfig.weatherSlider == slider) return "Weather Volume";
+                }
+                
+                // Check LayoutProfileConfiguration singleton
+                var layoutConfig = UnityEngine.Object.FindObjectOfType<Il2Cpp.LayoutProfileConfiguration>();
+                if (layoutConfig != null && layoutConfig.slider == slider)
+                {
+                    return "UI Layout Scale";
+                }
+                
+                // Check TextSizeConfiguration singleton
+                var textConfig = UnityEngine.Object.FindObjectOfType<Il2Cpp.TextSizeConfiguration>();
+                if (textConfig != null && textConfig.slider == slider)
+                {
+                    return "Text Size";
+                }
+                
+                // Check graphics option singletons
+                var gammaOption = UnityEngine.Object.FindObjectOfType<Il2Cpp.GammaGraphicsOption>();
+                if (gammaOption != null && gammaOption.slider == slider)
+                {
+                    return gammaOption.settingName ?? "Gamma";
+                }
+                
+                var brightnessOption = UnityEngine.Object.FindObjectOfType<Il2Cpp.BrightnessGraphicsOption>();
+                if (brightnessOption != null && brightnessOption.slider == slider)
+                {
+                    return brightnessOption.settingName ?? "Brightness";
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error checking slider singletons: {ex}");
+                return null;
+            }
+        }
+        
+        // Try to get slider name from parent GameObject hierarchy
+        private static string TryGetSliderNameFromParent(GameObject uiObject)
+        {
+            try
+            {
+                var parent = uiObject.transform.parent;
+                if (parent != null)
+                {
+                    string parentName = parent.name.ToLower();
+                    
+                    // Common slider parent patterns in options screens
+                    if (parentName.Contains("volume")) return "Volume";
+                    if (parentName.Contains("audio")) return "Audio";
+                    if (parentName.Contains("sound")) return "Sound";
+                    if (parentName.Contains("music")) return "Music";
+                    if (parentName.Contains("gamma")) return "Gamma";
+                    if (parentName.Contains("brightness")) return "Brightness";
+                    if (parentName.Contains("scale") || parentName.Contains("size")) return "UI Scale";
+                    if (parentName.Contains("graphics")) return "Graphics Setting";
+                    
+                    // Check grandparent for more context
+                    var grandparent = parent.parent;
+                    if (grandparent != null)
+                    {
+                        string grandparentName = grandparent.name.ToLower();
+                        if (grandparentName.Contains("audio") && parentName.Contains("slider"))
+                            return "Audio Setting";
+                        if (grandparentName.Contains("graphics") && parentName.Contains("slider"))
+                            return "Graphics Setting";
+                    }
+                    
+                    // Clean up and return parent name as fallback
+                    return CleanObjectName(parent.name) + " Slider";
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error getting slider name from parent: {ex}");
+                return null;
+            }
+        }
+        
+        // Try to get slider name from GameObject name itself
+        private static string TryGetSliderNameFromGameObject(GameObject uiObject)
+        {
+            try
+            {
+                string objName = uiObject.name.ToLower();
+                
+                // Check for common slider naming patterns
+                if (objName.Contains("volume")) return "Volume Slider";
+                if (objName.Contains("audio")) return "Audio Slider";
+                if (objName.Contains("music")) return "Music Slider";
+                if (objName.Contains("gamma")) return "Gamma Slider";
+                if (objName.Contains("brightness")) return "Brightness Slider";
+                if (objName.Contains("scale")) return "Scale Slider";
+                
+                // Generic fallback with cleaned name
+                if (objName.Contains("slider"))
+                {
+                    return CleanObjectName(uiObject.name);
+                }
+                
+                return CleanObjectName(uiObject.name) + " Slider";
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error getting slider name from GameObject: {ex}");
+                return "Slider";
+            }
+        }
+        
+        // Format slider value contextually based on slider type
+        private static string FormatSliderValue(UnityEngine.UI.Slider slider, string sliderName)
+        {
+            try
+            {
+                float value = slider.value;
+                float normalizedValue = slider.normalizedValue;
+                int percentage = Mathf.RoundToInt(normalizedValue * 100);
+                
+                string lowerName = sliderName.ToLower();
+                
+                // Volume sliders: show percentage
+                if (lowerName.Contains("volume"))
+                {
+                    return $"{percentage}%";
+                }
+                
+                // UI Layout Scale: show step-based value
+                if (lowerName.Contains("ui layout scale") || lowerName.Contains("layout"))
+                {
+                    // Layout profile typically has 5 steps (0-4)
+                    int step = Mathf.RoundToInt(value) + 1; // Make it 1-based
+                    int maxSteps = Mathf.RoundToInt(slider.maxValue) + 1;
+                    return $"{step} of {maxSteps}";
+                }
+                
+                // Text Size: show named sizes
+                if (lowerName.Contains("text size"))
+                {
+                    try
+                    {
+                        var textConfig = UnityEngine.Object.FindObjectOfType<Il2Cpp.TextSizeConfiguration>();
+                        if (textConfig != null)
+                        {
+                            var currentTextSize = Il2Cpp.TextSizeConfiguration.CurrTextSize;
+                            string sizeName = currentTextSize.ToString();
+                            
+                            // Capitalize first letter for better speech
+                            if (!string.IsNullOrEmpty(sizeName))
+                            {
+                                sizeName = char.ToUpper(sizeName[0]) + sizeName.Substring(1).ToLower();
+                            }
+                            
+                            int textStep = Mathf.RoundToInt(value) + 1;
+                            int textMaxSteps = Mathf.RoundToInt(slider.maxValue) + 1;
+                            return $"{sizeName} ({textStep} of {textMaxSteps})";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MelonLogger.Error($"Error getting text size name: {ex}");
+                    }
+                    
+                    // Fallback to step-based
+                    int textFallbackStep = Mathf.RoundToInt(value) + 1;
+                    int textFallbackMaxSteps = Mathf.RoundToInt(slider.maxValue) + 1;
+                    return $"{textFallbackStep} of {textFallbackMaxSteps}";
+                }
+                
+                // Graphics settings: try to show meaningful ranges
+                if (lowerName.Contains("gamma") || lowerName.Contains("brightness"))
+                {
+                    return $"{value:F1}";
+                }
+                
+                // Default: show both percentage and raw value if they're different
+                if (Mathf.Abs(value - percentage) > 0.1f)
+                {
+                    return $"{value:F1} ({percentage}%)";
+                }
+                
+                return $"{percentage}%";
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error formatting slider value: {ex}");
+                return $"{Mathf.RoundToInt(slider.normalizedValue * 100)}%";
             }
         }
         
