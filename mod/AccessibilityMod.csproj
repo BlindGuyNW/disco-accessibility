@@ -82,6 +82,10 @@
       <HintPath>$(DISCO_ELYSIUM_PATH)\MelonLoader\Il2CppAssemblies\Il2CppDialogueSystem.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Il2Cppl2Localization">
+      <HintPath>$(DISCO_ELYSIUM_PATH)\MelonLoader\Il2CppAssemblies\Il2Cppl2Localization.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
 
   <!-- Fallback references for when DISCO_ELYSIUM_PATH is not set -->
@@ -124,6 +128,10 @@
     </Reference>
     <Reference Include="Il2CppDialogueSystem">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Disco Elysium\MelonLoader\Il2CppAssemblies\Il2CppDialogueSystem.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Il2Cppl2Localization">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Disco Elysium\MelonLoader\Il2CppAssemblies\Il2Cppl2Localization.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
