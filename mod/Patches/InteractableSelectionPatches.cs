@@ -54,9 +54,6 @@ namespace AccessibilityMod.Patches
                             UINavigationHandler.lastSpeechTime = Time.time;
                         }
                     }
-                    
-                    // Keep minimal logging for debugging
-                    MelonLogger.Msg($"[OBJECT DEBUG] {speechText}");
                 }
             }
             catch (Exception ex)
@@ -72,15 +69,7 @@ namespace AccessibilityMod.Patches
     {
         static void Postfix(InteractableSelectionManager __instance, OrbUiElement orb, float distance)
         {
-            try
-            {
-                // Keep minimal debug logging
-                MelonLogger.Msg($"[ORB DEBUG] {orb?.name ?? "Unknown"} at distance {distance:F2}");
-            }
-            catch (Exception ex)
-            {
-                MelonLogger.Error($"Error in InteractableAdded patch: {ex}");
-            }
+            // Orb added to selection manager - no logging needed
         }
     }
 
@@ -105,9 +94,6 @@ namespace AccessibilityMod.Patches
                             UINavigationHandler.lastSpeechTime = Time.time;
                         }
                     }
-                    
-                    // Keep minimal debug logging
-                    MelonLogger.Msg($"[SETTER DEBUG] {speechText ?? "Unknown object"}");
                 }
             }
             catch (Exception ex)

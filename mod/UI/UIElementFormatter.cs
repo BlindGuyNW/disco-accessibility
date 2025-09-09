@@ -747,13 +747,13 @@ namespace AccessibilityMod.UI
                 string basicText = ExtractBestTextContent(uiObject);
                 if (!string.IsNullOrEmpty(basicText) && IsArchetypeRelatedText(basicText, uiObject))
                 {
-                    MelonLogger.Msg($"Detected archetype-related text: {basicText} on object: {uiObject.name}");
+                    // Found archetype-related text
                     
                     // Use the same approach as skill descriptions - read what's displayed on screen
                     string displayedDescription = FindDisplayedArchetypeDescription(uiObject, basicText);
                     if (!string.IsNullOrEmpty(displayedDescription))
                     {
-                        MelonLogger.Msg($"Found displayed archetype description: {displayedDescription}");
+                        // Found displayed archetype description
                         return displayedDescription;
                     }
                     
@@ -774,7 +774,7 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                MelonLogger.Msg($"Looking for displayed archetype description for {archetypeName}");
+                // Looking for displayed archetype description
                 
                 // Search in the archetype object and its broader hierarchy for description text
                 var candidates = new List<GameObject> { archetypeObject };
@@ -830,7 +830,7 @@ namespace AccessibilityMod.UI
                     allTextComponents.AddRange(textComponents);
                 }
                 
-                MelonLogger.Msg($"Found {allTextComponents.Count} text components to search for {archetypeName} archetype");
+                // Searching text components for archetype description
                 
                 foreach (var component in allTextComponents)
                 {
@@ -847,7 +847,7 @@ namespace AccessibilityMod.UI
                     
                     if (!string.IsNullOrEmpty(text))
                     {
-                        MelonLogger.Msg($"Checking archetype text: '{text.Substring(0, Math.Min(50, text.Length))}...'");
+                        // Checking text for archetype description pattern
                         
                         // Look for archetype description patterns
                         if (IsLikelyArchetypeDescriptionText(text, archetypeName))
@@ -1027,7 +1027,7 @@ namespace AccessibilityMod.UI
                             string displayedDescription = FindDisplayedStatDescription(uiObject, attributeName);
                             if (!string.IsNullOrEmpty(displayedDescription))
                             {
-                                MelonLogger.Msg($"Found displayed stat description for {attributeName}: {displayedDescription}");
+                                // Found displayed stat description
                                 
                                 if (speechText.Length <= 2) // Likely a number value
                                 {
@@ -1069,7 +1069,7 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                MelonLogger.Msg($"Looking for displayed stat description for {statName}");
+                // Looking for displayed stat description
                 
                 // Search in the stat object and its broader hierarchy for description text
                 var candidates = new List<GameObject> { statObject };
@@ -1125,7 +1125,7 @@ namespace AccessibilityMod.UI
                     allTextComponents.AddRange(textComponents);
                 }
                 
-                MelonLogger.Msg($"Found {allTextComponents.Count} text components to search for {statName} stat");
+                // Searching text components for stat description
                 
                 foreach (var component in allTextComponents)
                 {
@@ -1142,7 +1142,7 @@ namespace AccessibilityMod.UI
                     
                     if (!string.IsNullOrEmpty(text))
                     {
-                        MelonLogger.Msg($"Checking stat text: '{text.Substring(0, Math.Min(50, text.Length))}...'");
+                        // Checking text for stat description pattern
                         
                         // Look for stat description patterns
                         if (IsLikelyStatDescriptionText(text, statName))
@@ -1266,7 +1266,7 @@ namespace AccessibilityMod.UI
                     parent.parent.name == "Skills" && uiObject.name == "Select Button")
                 {
                     string skillName = parent.name;
-                    MelonLogger.Msg($"Detected skill selection for: {skillName}");
+                    // Detected skill selection
                     
                     // Try to get rich description from game data first
                     string gameDescription = GetGameSkillDescription(parent.gameObject, skillName);
@@ -1469,7 +1469,7 @@ namespace AccessibilityMod.UI
 
         private static string GetGameSkillDescription(GameObject skillParent, string skillName)
         {
-            MelonLogger.Msg($"GetGameSkillDescription called for {skillName} with parent: {skillParent?.name}");
+            // Getting game skill description
             try
             {
                 if (skillParent == null)
@@ -1482,7 +1482,7 @@ namespace AccessibilityMod.UI
                 string displayedDescription = FindDisplayedSkillDescription(skillParent, skillName);
                 if (!string.IsNullOrEmpty(displayedDescription))
                 {
-                    MelonLogger.Msg($"Found displayed description for {skillName}: {displayedDescription}");
+                    // Found displayed skill description
                     return displayedDescription;
                 }
                 
@@ -1501,7 +1501,7 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                MelonLogger.Msg($"Looking for displayed skill description for {skillName}");
+                // Looking for displayed skill description
                 
                 // Search in the skill parent and its broader hierarchy for description text
                 var candidates = new List<GameObject> { skillParent };
@@ -1557,7 +1557,7 @@ namespace AccessibilityMod.UI
                     allTextComponents.AddRange(textComponents);
                 }
                 
-                MelonLogger.Msg($"Found {allTextComponents.Count} text components to search for {skillName}");
+                // Searching text components for skill description
                 
                 foreach (var component in allTextComponents)
                 {
@@ -1574,7 +1574,7 @@ namespace AccessibilityMod.UI
                     
                     if (!string.IsNullOrEmpty(text))
                     {
-                        MelonLogger.Msg($"Checking text: '{text.Substring(0, Math.Min(50, text.Length))}...'");
+                        // Checking text for skill description pattern
                         
                         // Look for skill description patterns
                         if (IsLikelySkillDescriptionText(text, skillName))
@@ -1688,30 +1688,21 @@ namespace AccessibilityMod.UI
                 if (skill == null) return null;
                 
                 var type = skill.GetType();
-                MelonLogger.Msg($"Skill object type for {skillName}: {type.FullName}");
-                
                 // Look for description-related fields and properties
                 var fields = type.GetFields();
                 var properties = type.GetProperties();
                 
-                MelonLogger.Msg($"Skill {skillName} has {fields.Length} fields and {properties.Length} properties");
-                
                 // Try common field names for descriptions
                 foreach (var field in fields)
                 {
-                    MelonLogger.Msg($"  Field: {field.Name} ({field.FieldType.Name})");
                     if (field.Name.ToLower().Contains("description") || 
                         field.Name.ToLower().Contains("tooltip") ||
                         field.Name.ToLower().Contains("info"))
                     {
                         var value = field.GetValue(skill);
-                        if (value != null)
+                        if (value != null && value is string str && !string.IsNullOrEmpty(str))
                         {
-                            MelonLogger.Msg($"Found description field {field.Name}: {value}");
-                            if (value is string str && !string.IsNullOrEmpty(str))
-                            {
-                                return $"{skillName.Replace('_', ' ')} Skill: {str.Trim()}";
-                            }
+                            return $"{skillName.Replace('_', ' ')} Skill: {str.Trim()}";
                         }
                     }
                 }
@@ -1751,36 +1742,11 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                MelonLogger.Msg($"Looking for specific Il2Cpp components for {skillName}...");
+                // Looking for specific Il2Cpp components
                 
-                // Try to find various game-specific components
+                // Try to find various game-specific components (for debug purposes)
                 var statLevelers = skillParent.GetComponentsInChildren<Il2Cpp.StatLeveler>();
-                if (statLevelers.Length > 0)
-                {
-                    MelonLogger.Msg($"Found {statLevelers.Length} StatLeveler components");
-                    foreach (var leveler in statLevelers)
-                    {
-                        if (leveler != null)
-                        {
-                            MelonLogger.Msg($"  StatLeveler ability: {leveler.ability}");
-                        }
-                    }
-                }
-                
-                // Try looking for any Disco-specific components
-                var discoComponents = skillParent.GetComponentsInChildren<Component>();
-                foreach (var comp in discoComponents)
-                {
-                    if (comp != null)
-                    {
-                        var typeName = comp.GetType().FullName;
-                        if (typeName.Contains("Disco") || typeName.Contains("Skill") || 
-                            typeName.Contains("Tooltip") || typeName.Contains("Info"))
-                        {
-                            MelonLogger.Msg($"  Found game component: {typeName}");
-                        }
-                    }
-                }
+                // Could potentially extract skill descriptions from StatLeveler components here
             }
             catch (Exception ex)
             {
