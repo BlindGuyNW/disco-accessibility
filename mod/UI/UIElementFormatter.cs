@@ -2065,5 +2065,11 @@ namespace AccessibilityMod.UI
                     return $"{skillName.Replace('_', ' ')} Skill: Select to view details and allocate points";
             }
         }
+
+        // Helper method to extract text from any GameObject
+        public static string ExtractTextFromGameObject(GameObject obj)
+        {
+            return ExtractBestTextContent(obj);
+        }
     }
 }

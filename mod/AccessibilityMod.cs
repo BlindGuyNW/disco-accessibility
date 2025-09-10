@@ -5,6 +5,7 @@ using UnityEngine;
 using AccessibilityMod.Navigation;
 using AccessibilityMod.Input;
 using AccessibilityMod.UI;
+using AccessibilityMod.Inventory;
 
 [assembly: MelonInfo(typeof(AccessibilityMod.AccessibilityMod), "Disco Elysium Accessibility Mod", "1.0.0", "YourName")]
 [assembly: MelonGame("ZAUM Studio", "Disco Elysium")]
@@ -16,6 +17,7 @@ namespace AccessibilityMod
         private SmartNavigationSystem navigationSystem;
         private InputManager inputManager;
         private UINavigationHandler uiNavigationHandler;
+        private InventoryNavigationHandler inventoryHandler;
 
         public override void OnInitializeMelon()
         {
@@ -31,20 +33,6 @@ namespace AccessibilityMod
             catch (Exception ex)
             {
                 LoggerInstance.Error($"Failed to apply Harmony patches: {ex}");
-            }
-            
-            // Move mouse cursor to safe position to prevent UI interference
-            try
-            {
-                // Move mouse to bottom-right corner where there's typically no UI
-                Cursor.SetCursor(null, new Vector2(Screen.width - 10, Screen.height - 10), CursorMode.Auto);
-                // Also try to set the actual mouse position if possible
-                // Input.mousePosition is read-only, so we can't set it directly
-                LoggerInstance.Msg("Mouse cursor repositioned to safe area");
-            }
-            catch (Exception ex)
-            {
-                LoggerInstance.Warning($"Could not reposition mouse cursor: {ex.Message}");
             }
             
             // Initialize Tolk screen reader
@@ -82,6 +70,8 @@ namespace AccessibilityMod
             navigationSystem = new SmartNavigationSystem();
             inputManager = new InputManager(navigationSystem);
             uiNavigationHandler = new UINavigationHandler();
+            inventoryHandler = InventoryNavigationHandler.Instance;
+            inventoryHandler.Initialize();
             
             LoggerInstance.Msg("All accessibility systems initialized successfully");
         }
@@ -96,18 +86,6 @@ namespace AccessibilityMod
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
             LoggerInstance.Msg($"Scene loaded: {sceneName} (Index: {buildIndex})");
-            
-            // Reposition mouse cursor when scene loads to prevent UI interference
-            try
-            {
-                // Move to corner where there's typically no UI
-                Cursor.SetCursor(null, new Vector2(Screen.width - 10, Screen.height - 10), CursorMode.Auto);
-                LoggerInstance.Msg("Mouse cursor repositioned after scene load");
-            }
-            catch (Exception ex)
-            {
-                LoggerInstance.Warning($"Could not reposition mouse after scene load: {ex.Message}");
-            }
         }
         
         public override void OnUpdate()
@@ -122,6 +100,9 @@ namespace AccessibilityMod
                 
                 // Update UI navigation
                 uiNavigationHandler.UpdateUINavigation();
+                
+                // Update inventory navigation
+                inventoryHandler.Update();
             }
             catch (Exception ex)
             {
