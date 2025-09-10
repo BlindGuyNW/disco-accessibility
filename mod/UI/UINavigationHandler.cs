@@ -25,39 +25,8 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                // Check for selected UI elements via Selectable components
-                var selectables = UnityEngine.Object.FindObjectsOfType<Selectable>();
-                foreach (var selectable in selectables)
-                {
-                    if (selectable != null && selectable.gameObject != null)
-                    {
-                        // Check if this selectable is in "highlighted" or "selected" state
-                        var state = selectable.currentSelectionState;
-                        if (state == Selectable.SelectionState.Highlighted || 
-                            state == Selectable.SelectionState.Selected)
-                        {
-                            var name = selectable.gameObject.name;
-                            
-                            if (lastSelectedUIObject == null || lastSelectedUIObject != selectable.gameObject)
-                            {
-                                lastSelectedUIObject = selectable.gameObject;
-                                
-                                // Extract text and format for speech with UI context
-                                string speechText = UIElementFormatter.FormatUIElementForSpeech(selectable.gameObject);
-                                if (!string.IsNullOrEmpty(speechText) && speechText != lastSpokenText)
-                                {
-                                    TolkScreenReader.Instance.Speak(speechText, false); // Don't interrupt ongoing speech
-                                    lastSpokenText = speechText;
-                                    lastSpeechTime = Time.time;
-                                }
-                                
-                                // Debug logging removed to prevent console spam
-                            }
-                        }
-                    }
-                }
-
-                // Also check current EventSystem selection as fallback
+                // Only check EventSystem selection (controller/keyboard navigation)
+                // Removed Selectable.Highlighted checking to prevent mouse hover announcements
                 CheckCurrentUISelection();
                 
                 // Check for dialog response buttons periodically
