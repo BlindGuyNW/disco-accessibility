@@ -121,7 +121,9 @@ namespace AccessibilityMod.Patches
         
         /// <summary>
         /// Patch FinalEntry constructor to capture dialog entries as they're created
+        /// COMMENTED OUT: This patch fails to find the correct constructor signature
         /// </summary>
+        /*
         [HarmonyPatch(typeof(FinalEntry), ".ctor", typeof(DialogueEntry), typeof(string), typeof(string))]
         public static class FinalEntry_Constructor_Patch
         {
@@ -141,6 +143,7 @@ namespace AccessibilityMod.Patches
                 }
             }
         }
+        */
         
         /// <summary>
         /// Format dialog text with speaker identification

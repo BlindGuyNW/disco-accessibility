@@ -5,6 +5,7 @@ using UnityEngine;
 using AccessibilityMod.Navigation;
 using AccessibilityMod.Input;
 using AccessibilityMod.UI;
+using AccessibilityMod.Inventory;
 
 [assembly: MelonInfo(typeof(AccessibilityMod.AccessibilityMod), "Disco Elysium Accessibility Mod", "1.0.0", "YourName")]
 [assembly: MelonGame("ZAUM Studio", "Disco Elysium")]
@@ -16,6 +17,7 @@ namespace AccessibilityMod
         private SmartNavigationSystem navigationSystem;
         private InputManager inputManager;
         private UINavigationHandler uiNavigationHandler;
+        private InventoryNavigationHandler inventoryHandler;
 
         public override void OnInitializeMelon()
         {
@@ -68,6 +70,8 @@ namespace AccessibilityMod
             navigationSystem = new SmartNavigationSystem();
             inputManager = new InputManager(navigationSystem);
             uiNavigationHandler = new UINavigationHandler();
+            inventoryHandler = InventoryNavigationHandler.Instance;
+            inventoryHandler.Initialize();
             
             LoggerInstance.Msg("All accessibility systems initialized successfully");
         }
@@ -96,6 +100,9 @@ namespace AccessibilityMod
                 
                 // Update UI navigation
                 uiNavigationHandler.UpdateUINavigation();
+                
+                // Update inventory navigation
+                inventoryHandler.Update();
             }
             catch (Exception ex)
             {
