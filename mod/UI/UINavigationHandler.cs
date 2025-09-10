@@ -12,7 +12,7 @@ namespace AccessibilityMod.UI
         public static GameObject lastSelectedUIObject = null;
         public static string lastSpokenText = "";
         public static float lastSpeechTime = 0f;
-        public static readonly float SPEECH_COOLDOWN = 0.1f; // 100ms cooldown to prevent spam
+        public static readonly float SPEECH_COOLDOWN = 0.5f; // 500ms cooldown to prevent speech bounce
         
         // Track dialog responses for better single option detection
         private static List<Il2Cpp.SunshineResponseButton> currentResponseButtons = new List<Il2Cpp.SunshineResponseButton>();
@@ -44,7 +44,8 @@ namespace AccessibilityMod.UI
                                 
                                 // Extract text and format for speech with UI context
                                 string speechText = UIElementFormatter.FormatUIElementForSpeech(selectable.gameObject);
-                                if (!string.IsNullOrEmpty(speechText) && speechText != lastSpokenText)
+                                if (!string.IsNullOrEmpty(speechText) && speechText != lastSpokenText && 
+                                    (Time.time - lastSpeechTime) > SPEECH_COOLDOWN)
                                 {
                                     TolkScreenReader.Instance.Speak(speechText, false); // Don't interrupt ongoing speech
                                     lastSpokenText = speechText;
@@ -89,14 +90,12 @@ namespace AccessibilityMod.UI
                         
                         // Extract text and format for speech with UI context  
                         string speechText = UIElementFormatter.FormatUIElementForSpeech(currentSelection);
-                        if (!string.IsNullOrEmpty(speechText))
+                        if (!string.IsNullOrEmpty(speechText) && speechText != lastSpokenText && 
+                            (Time.time - lastSpeechTime) > SPEECH_COOLDOWN)
                         {
-                            if (!string.IsNullOrEmpty(speechText) && speechText != lastSpokenText)
-                            {
-                                TolkScreenReader.Instance.Speak(speechText, false);
-                                lastSpokenText = speechText;
-                                lastSpeechTime = Time.time;
-                            }
+                            TolkScreenReader.Instance.Speak(speechText, false);
+                            lastSpokenText = speechText;
+                            lastSpeechTime = Time.time;
                         }
                         
                         // Debug logging removed
@@ -181,11 +180,11 @@ namespace AccessibilityMod.UI
                             singleResponse.Length < 50) // Short responses are often continue prompts
                         {
                             // Make sure it's announced even if not selected yet
-                            if (singleResponse != lastSpokenText)
+                            if (singleResponse != lastSpokenText && (Time.time - lastSpeechTime) > SPEECH_COOLDOWN)
                             {
                                 TolkScreenReader.Instance.Speak($"Single option: {singleResponse}", false);
                                 lastSpokenText = singleResponse;
-                                // Debug logging removed
+                                lastSpeechTime = Time.time;
                             }
                         }
                     }
