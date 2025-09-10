@@ -708,16 +708,78 @@ namespace AccessibilityMod.UI
 
                 if (isWhiteCheck || isRedCheck)
                 {
-                    // For now, we'll identify skill checks by type
-                    // TODO: Extract specific skill check details if available
+                    // Try to extract skill check percentage and details
                     string checkType = isWhiteCheck ? "White Check" : "Red Check";
-                    skillCheckInfo = checkType;
+                    string skillDetails = "";
+                    
+                    // Look for skill check details in the response button
+                    try
+                    {
+                        // Check if there are percentage or difficulty indicators in the UI
+                        var parent = responseButton.transform.parent;
+                        if (parent != null)
+                        {
+                            // Look for text components that might contain percentage or difficulty
+                            var textComponents = parent.GetComponentsInChildren<Il2CppTMPro.TextMeshProUGUI>();
+                            foreach (var textComp in textComponents)
+                            {
+                                if (textComp != null && !string.IsNullOrEmpty(textComp.text))
+                                {
+                                    string text = textComp.text.Trim();
+                                    // Look for percentage patterns like "75%" or difficulty like "Very Easy"
+                                    if (text.Contains("%") || 
+                                        text.Contains("Easy") || text.Contains("Medium") || text.Contains("Hard") ||
+                                        text.Contains("Impossible") || text.Contains("Trivial") ||
+                                        text.Contains("Challenging") || text.Contains("Legendary"))
+                                    {
+                                        skillDetails = text;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback to basic check type
+                    }
+                    
+                    // Format skill check info
+                    if (!string.IsNullOrEmpty(skillDetails))
+                    {
+                        skillCheckInfo = $"{checkType} ({skillDetails})";
+                    }
+                    else
+                    {
+                        skillCheckInfo = checkType;
+                    }
                 }
 
+                // Check if we should skip dialog text to avoid interrupting dialog reading
+                bool skipDialogText = DialogStateManager.IsInConversation() && DialogStateManager.IsDialogReadingEnabled;
+                
                 // Combine skill check info with dialog text
                 if (!string.IsNullOrEmpty(skillCheckInfo) && !string.IsNullOrEmpty(dialogText))
                 {
-                    return $"{skillCheckInfo}: {dialogText}";
+                    if (skipDialogText)
+                    {
+                        // Only announce skill check info, skip dialog text to avoid interruption
+                        return skillCheckInfo;
+                    }
+                    else
+                    {
+                        // Check if dialog text already contains skill check details to avoid duplication
+                        if (dialogText.Contains("[") && dialogText.Contains("]") && dialogText.Contains("-"))
+                        {
+                            // Dialog text already has skill check details, just prefix with check type
+                            string checkType = isWhiteCheck ? "White Check" : "Red Check";
+                            return $"{checkType}: {dialogText}";
+                        }
+                        else
+                        {
+                            return $"{skillCheckInfo}: {dialogText}";
+                        }
+                    }
                 }
                 else if (!string.IsNullOrEmpty(skillCheckInfo))
                 {
@@ -725,7 +787,15 @@ namespace AccessibilityMod.UI
                 }
                 else if (!string.IsNullOrEmpty(dialogText))
                 {
-                    return $"Dialog: {dialogText}";
+                    if (skipDialogText)
+                    {
+                        // Skip dialog text entirely when dialog reading is active
+                        return null;
+                    }
+                    else
+                    {
+                        return $"Dialog: {dialogText}";
+                    }
                 }
 
                 return null;

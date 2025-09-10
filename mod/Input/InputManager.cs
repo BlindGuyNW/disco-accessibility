@@ -70,6 +70,12 @@ namespace AccessibilityMod.Input
             {
                 navigationSystem.StopMovement();
             }
+            
+            // Toggle dialog reading mode: Minus/Hyphen (-)
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Minus))
+            {
+                DialogStateManager.ToggleDialogReading();
+            }
         }
 
         private void AnnounceCurrentSelection()
