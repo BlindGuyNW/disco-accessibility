@@ -11,8 +11,6 @@ namespace AccessibilityMod.UI
     {
         public static GameObject lastSelectedUIObject = null;
         public static string lastSpokenText = "";
-        public static float lastSpeechTime = 0f;
-        public static readonly float SPEECH_COOLDOWN = 0.5f; // 500ms cooldown to prevent speech bounce
         
         // Track dialog responses for better single option detection
         private static List<Il2Cpp.SunshineResponseButton> currentResponseButtons = new List<Il2Cpp.SunshineResponseButton>();
@@ -52,22 +50,35 @@ namespace AccessibilityMod.UI
                 if (eventSystem != null)
                 {
                     var currentSelection = eventSystem.currentSelectedGameObject;
+                    
+                    // Debug: Always log what EventSystem thinks is selected
+                    MelonLogger.Msg($"[UI] EventSystem.currentSelectedGameObject: {currentSelection?.name ?? "null"}");
+                    
                     if (currentSelection != lastSelectedUIObject)
                     {
                         lastSelectedUIObject = currentSelection;
                         
+                        MelonLogger.Msg($"[UI] Selection changed to: {currentSelection?.name ?? "null"}");
+                        
                         // Extract text and format for speech with UI context  
                         string speechText = UIElementFormatter.FormatUIElementForSpeech(currentSelection);
-                        if (!string.IsNullOrEmpty(speechText) && speechText != lastSpokenText && 
-                            (Time.time - lastSpeechTime) > SPEECH_COOLDOWN)
+                        MelonLogger.Msg($"[UI] UIElementFormatter returned: '{speechText}'");
+                        
+                        if (!string.IsNullOrEmpty(speechText))
                         {
+                            MelonLogger.Msg($"[UI] Speaking: {speechText}");
                             TolkScreenReader.Instance.Speak(speechText, false);
                             lastSpokenText = speechText;
-                            lastSpeechTime = Time.time;
                         }
-                        
-                        // Debug logging removed
+                        else
+                        {
+                            MelonLogger.Msg($"[UI] Not speaking - empty text");
+                        }
                     }
+                }
+                else
+                {
+                    MelonLogger.Msg("[UI] EventSystem.current is null");
                 }
             }
             catch (Exception ex)
@@ -148,11 +159,10 @@ namespace AccessibilityMod.UI
                             singleResponse.Length < 50) // Short responses are often continue prompts
                         {
                             // Make sure it's announced even if not selected yet
-                            if (singleResponse != lastSpokenText && (Time.time - lastSpeechTime) > SPEECH_COOLDOWN)
+                            if (singleResponse != lastSpokenText)
                             {
                                 TolkScreenReader.Instance.Speak($"Single option: {singleResponse}", false);
                                 lastSpokenText = singleResponse;
-                                lastSpeechTime = Time.time;
                             }
                         }
                     }

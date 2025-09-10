@@ -43,16 +43,11 @@ namespace AccessibilityMod.Patches
                 
                 if (!string.IsNullOrEmpty(speechText))
                 {
-                    // Check for cooldown to prevent rapid speech
-                    if (Time.time - UINavigationHandler.lastSpeechTime > UINavigationHandler.SPEECH_COOLDOWN)
+                    // Don't repeat the same text
+                    if (speechText != UINavigationHandler.lastSpokenText)
                     {
-                        // Don't repeat the same text
-                        if (speechText != UINavigationHandler.lastSpokenText)
-                        {
-                            TolkScreenReader.Instance.Speak(speechText, false); // Don't interrupt for world objects
-                            UINavigationHandler.lastSpokenText = speechText;
-                            UINavigationHandler.lastSpeechTime = Time.time;
-                        }
+                        TolkScreenReader.Instance.Speak(speechText, false); // Don't interrupt for world objects
+                        UINavigationHandler.lastSpokenText = speechText;
                     }
                 }
             }
@@ -87,12 +82,8 @@ namespace AccessibilityMod.Patches
                     string speechText = UIElementFormatter.FormatInteractableForSpeech(value);
                     if (!string.IsNullOrEmpty(speechText) && speechText != UINavigationHandler.lastSpokenText)
                     {
-                        if (Time.time - UINavigationHandler.lastSpeechTime > UINavigationHandler.SPEECH_COOLDOWN)
-                        {
-                            TolkScreenReader.Instance.Speak(speechText, false);
-                            UINavigationHandler.lastSpokenText = speechText;
-                            UINavigationHandler.lastSpeechTime = Time.time;
-                        }
+                        TolkScreenReader.Instance.Speak(speechText, false);
+                        UINavigationHandler.lastSpokenText = speechText;
                     }
                 }
             }
