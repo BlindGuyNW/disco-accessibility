@@ -60,7 +60,7 @@ namespace AccessibilityMod.Navigation
                 ObjectCategory.NPCs => 50f,         // Important people can be further
                 ObjectCategory.Locations => 50f,    // Doors/exits can be further  
                 ObjectCategory.Loot => 30f,         // Containers usually nearby
-                ObjectCategory.Everything => 20f,   // Avoid overwhelming with distant clutter
+                ObjectCategory.Everything => 50f,   // Same range as NPCs and locations
                 _ => 30f
             };
         }
@@ -72,7 +72,7 @@ namespace AccessibilityMod.Navigation
                 ObjectCategory.NPCs => "NPC",
                 ObjectCategory.Locations => "Location", 
                 ObjectCategory.Loot => "Container",
-                ObjectCategory.Everything => "Object",
+                ObjectCategory.Everything => "Everything",
                 _ => "Item"
             };
         }

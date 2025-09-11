@@ -54,9 +54,17 @@ The mod follows a **modular system architecture** with clear separation of conce
 ### UI Integration (mod/UI/)
 - **UINavigationHandler.cs**: Detects and announces UI element selection
 - **UIElementFormatter.cs**: Formats UI elements for screen reader output
+- **DialogStateManager.cs**: Manages dialog reading modes
 
 ### Game Integration (mod/Patches/)
 - **InteractableSelectionPatches.cs**: Harmony patches for game's interaction system
+- **DialogSystemPatches.cs**: Patches for dialog system accessibility
+- **OrbTextVocalizationPatches.cs**: Patches for skill check announcements
+- **NotificationVocalizationPatches.cs**: Patches for game notifications
+- **InventoryPatches.cs**: Patches for inventory accessibility
+
+### Inventory System (mod/Inventory/)
+- **InventoryNavigationHandler.cs**: Keyboard navigation for inventory screens
 
 ### Utilities (mod/Utils/)
 - **GameObjectUtils.cs**: Game object discovery and player position detection
@@ -75,6 +83,8 @@ The mod follows a **modular system architecture** with clear separation of conce
 - **/** - Stop automated movement
 - **;** - Full scene object scan
 - **'** - Distance-based scene scan
+- **`** - Announce current UI selection
+- **-** - Toggle dialog reading mode
 
 ### Object Categories
 The system categorizes all interactable objects into logical groups:
