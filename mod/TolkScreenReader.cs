@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace AccessibilityMod
 {
@@ -61,9 +62,25 @@ namespace AccessibilityMod
             return Tolk.HasBraille();
         }
 
+        private string StripHtmlTags(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            
+            // Remove Unity color tags while preserving content
+            // This removes <color=...> and </color> tags but keeps the text inside
+            text = Regex.Replace(text, @"<color[^>]*>", "", RegexOptions.IgnoreCase);
+            text = Regex.Replace(text, @"</color>", "", RegexOptions.IgnoreCase);
+            
+            // Remove other common Unity/HTML tags while preserving content
+            text = Regex.Replace(text, @"</?[^>]+>", "");
+            
+            return text;
+        }
+
         public bool Speak(string text, bool interrupt = false)
         {
             if (!isInitialized || string.IsNullOrEmpty(text) || suppressAnnouncements) return false;
+            text = StripHtmlTags(text);
             return Tolk.Speak(text, interrupt);
         }
         
@@ -75,12 +92,14 @@ namespace AccessibilityMod
         public bool Output(string text, bool interrupt = false)
         {
             if (!isInitialized || string.IsNullOrEmpty(text)) return false;
+            text = StripHtmlTags(text);
             return Tolk.Output(text, interrupt);
         }
 
         public bool Braille(string text)
         {
             if (!isInitialized || string.IsNullOrEmpty(text)) return false;
+            text = StripHtmlTags(text);
             return Tolk.Braille(text);
         }
 
