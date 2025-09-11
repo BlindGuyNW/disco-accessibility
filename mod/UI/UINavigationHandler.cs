@@ -55,6 +55,9 @@ namespace AccessibilityMod.UI
                     {
                         lastSelectedUIObject = currentSelection;
                         
+                        // Check if this is a dialog response button selection
+                        CheckForDialogSelection(currentSelection);
+                        
                         // Extract text and format for speech with UI context  
                         string speechText = UIElementFormatter.FormatUIElementForSpeech(currentSelection);
                         
@@ -73,7 +76,7 @@ namespace AccessibilityMod.UI
         }
         
         /// <summary>
-        /// Check for dialog response buttons and handle single response scenarios
+        /// Check for dialog response buttons state changes and announce single response scenarios
         /// </summary>
         private static void CheckDialogResponses()
         {
@@ -152,25 +155,37 @@ namespace AccessibilityMod.UI
                         }
                     }
                 }
-                
-                // Check if any response is currently selected
-                foreach (var button in responseButtons)
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error checking dialog responses: {ex}");
+            }
+        }
+        
+        /// <summary>
+        /// Check if the currently selected UI element is a dialog response button and notify DialogStateManager
+        /// </summary>
+        private static void CheckForDialogSelection(GameObject selectedObject)
+        {
+            if (selectedObject == null) return;
+            
+            try
+            {
+                // Check if the selected object is a SunshineResponseButton
+                var responseButton = selectedObject.GetComponent<Il2Cpp.SunshineResponseButton>();
+                if (responseButton != null)
                 {
-                    if (button != null && button.gameObject == lastSelectedUIObject)
+                    // Find this button's index in our current response buttons list
+                    int index = currentResponseButtons.IndexOf(responseButton);
+                    if (index >= 0)
                     {
-                        // Find index of selected response
-                        int index = currentResponseButtons.IndexOf(button);
-                        if (index >= 0)
-                        {
-                            DialogStateManager.OnResponseSelected(index);
-                        }
-                        break;
+                        DialogStateManager.OnResponseSelected(index);
                     }
                 }
             }
             catch (Exception ex)
             {
-                MelonLogger.Error($"Error checking dialog responses: {ex}");
+                MelonLogger.Error($"Error checking dialog selection: {ex}");
             }
         }
         
