@@ -51,34 +51,19 @@ namespace AccessibilityMod.UI
                 {
                     var currentSelection = eventSystem.currentSelectedGameObject;
                     
-                    // Debug: Always log what EventSystem thinks is selected
-                    MelonLogger.Msg($"[UI] EventSystem.currentSelectedGameObject: {currentSelection?.name ?? "null"}");
-                    
                     if (currentSelection != lastSelectedUIObject)
                     {
                         lastSelectedUIObject = currentSelection;
                         
-                        MelonLogger.Msg($"[UI] Selection changed to: {currentSelection?.name ?? "null"}");
-                        
                         // Extract text and format for speech with UI context  
                         string speechText = UIElementFormatter.FormatUIElementForSpeech(currentSelection);
-                        MelonLogger.Msg($"[UI] UIElementFormatter returned: '{speechText}'");
                         
                         if (!string.IsNullOrEmpty(speechText))
                         {
-                            MelonLogger.Msg($"[UI] Speaking: {speechText}");
                             TolkScreenReader.Instance.Speak(speechText, false);
                             lastSpokenText = speechText;
                         }
-                        else
-                        {
-                            MelonLogger.Msg($"[UI] Not speaking - empty text");
-                        }
                     }
-                }
-                else
-                {
-                    MelonLogger.Msg("[UI] EventSystem.current is null");
                 }
             }
             catch (Exception ex)

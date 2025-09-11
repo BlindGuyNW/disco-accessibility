@@ -56,8 +56,6 @@ namespace AccessibilityMod.Patches
                         
                         lastSpokenDialog = formattedDialog;
                         lastDialogTime = UnityEngine.Time.time;
-                        
-                        MelonLogger.Msg($"[DIALOG] Speaking localized text: '{formattedDialog}'");
                     }
                 }
                 catch (Exception ex)
