@@ -19,80 +19,28 @@ namespace AccessibilityMod.Patches
         private static readonly float DIALOG_COOLDOWN = 0.5f; // 500ms cooldown to prevent spam
         
         /// <summary>
-        /// Patch ConversationLogger.OnConversationLine to capture all dialog as it appears
+        /// Patch LogRenderer.AddToLog to capture localized dialog text as it's rendered to the UI
         /// </summary>
-        [HarmonyPatch(typeof(Il2CppSunshine.ConversationLogger), "OnConversationLine", typeof(Subtitle))]
-        public static class ConversationLogger_OnConversationLine_Patch
+        [HarmonyPatch(typeof(LogRenderer), "AddToLog", typeof(FinalEntry))]
+        public static class LogRenderer_AddToLog_Patch
         {
-            public static void Postfix(Il2CppSunshine.ConversationLogger __instance, Subtitle subtitle)
+            public static void Postfix(LogRenderer __instance, FinalEntry entry)
             {
                 try
                 {
-                    if (subtitle == null) return;
+                    if (entry == null) return;
                     
                     // Check if dialog reading is enabled
                     if (!DialogStateManager.IsDialogReadingEnabled) return;
                     
-                    // Try to extract speaker name and dialog text from subtitle
-                    string speakerName = "";
-                    string dialogText = "";
-                    
-                    // Use FinalEntry.GetSpeakerName method if available
-                    try
-                    {
-                        speakerName = FinalEntry.GetSpeakerName(subtitle) ?? "";
-                    }
-                    catch
-                    {
-                        speakerName = "";
-                    }
-                    
-                    // Try to get dialog text from subtitle
-                    try
-                    {
-                        var subtitleObj = subtitle as Il2CppSystem.Object;
-                        if (subtitleObj != null)
-                        {
-                            var type = subtitleObj.GetType();
-                            
-                            // Try to get formattedText property first
-                            var formattedTextProp = type.GetProperty("formattedText");
-                            if (formattedTextProp != null)
-                            {
-                                var formattedTextObj = formattedTextProp.GetValue(subtitleObj);
-                                if (formattedTextObj != null)
-                                {
-                                    // FormattedText should have a 'text' property
-                                    var formattedTextType = formattedTextObj.GetType();
-                                    var textProp = formattedTextType.GetProperty("text");
-                                    if (textProp != null)
-                                    {
-                                        dialogText = textProp.GetValue(formattedTextObj)?.ToString() ?? "";
-                                    }
-                                }
-                            }
-                            
-                            // Fallback: try direct text property
-                            if (string.IsNullOrEmpty(dialogText))
-                            {
-                                var directTextProp = type.GetProperty("text");
-                                if (directTextProp != null)
-                                {
-                                    dialogText = directTextProp.GetValue(subtitleObj)?.ToString() ?? "";
-                                }
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        dialogText = "";
-                    }
+                    // Get localized dialog text and speaker name from FinalEntry
+                    string dialogText = entry.spokenLine ?? "";
+                    string speakerName = entry.speakerName ?? "";
                     
                     // Skip if no text to speak
                     if (string.IsNullOrEmpty(dialogText)) 
                     {
-                        // Log that we got a subtitle but couldn't extract text
-                        MelonLogger.Msg($"[DIALOG] Got subtitle but no text. Speaker: '{speakerName}'");
+                        MelonLogger.Msg($"[DIALOG] Got FinalEntry but no spokenLine. Speaker: '{speakerName}'");
                         return;
                     }
                     
@@ -103,18 +51,18 @@ namespace AccessibilityMod.Patches
                     if (formattedDialog != lastSpokenDialog || 
                         (UnityEngine.Time.time - lastDialogTime) > DIALOG_COOLDOWN)
                     {
-                        // Announce the dialog with speaker
+                        // Announce the localized dialog with speaker
                         TolkScreenReader.Instance.Speak(formattedDialog, false);
                         
                         lastSpokenDialog = formattedDialog;
                         lastDialogTime = UnityEngine.Time.time;
                         
-                        // Debug logging removed to prevent spam
+                        MelonLogger.Msg($"[DIALOG] Speaking localized text: '{formattedDialog}'");
                     }
                 }
                 catch (Exception ex)
                 {
-                    MelonLogger.Error($"Error in ConversationLogger.OnConversationLine patch: {ex}");
+                    MelonLogger.Error($"Error in LogRenderer.AddToLog patch: {ex}");
                 }
             }
         }
