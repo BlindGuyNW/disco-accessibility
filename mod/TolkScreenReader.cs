@@ -81,7 +81,7 @@ namespace AccessibilityMod
         {
             if (!isInitialized || string.IsNullOrEmpty(text) || suppressAnnouncements) return false;
             text = StripHtmlTags(text);
-            return Tolk.Speak(text, interrupt);
+            return Tolk.Output(text, interrupt);
         }
         
         public void SuppressAnnouncements(bool suppress)

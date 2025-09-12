@@ -126,7 +126,7 @@ The mod references Il2Cpp-generated assemblies from the game installation. These
 All user-facing announcements go through `TolkScreenReader.Instance.Speak()` which handles:
 - Multiple screen reader compatibility (NVDA, JAWS, etc.)
 - SAPI fallback when no screen reader is detected
-- Speech interruption for navigation updates
+- **Braille display support**: Automatically outputs to both speech and braille displays via `Tolk.Output()`
 
 ### Il2Cpp Considerations
 - Use `Il2Cpp*` prefixed types for game objects (e.g., `Il2CppTMPro.TextMeshProUGUI`)
