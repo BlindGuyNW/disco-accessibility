@@ -99,6 +99,13 @@ namespace AccessibilityMod.UI
                     return confirmationText;
                 }
                 
+                // Check for Thought Cabinet elements (high priority)
+                string thoughtCabinetText = ThoughtCabinetFormatter.GetThoughtCabinetElementInfo(uiObject);
+                if (!string.IsNullOrEmpty(thoughtCabinetText))
+                {
+                    return thoughtCabinetText;
+                }
+                
                 // Check for character creation elements
                 string archetypeText = CharacterCreationFormatter.GetArchetypeInformation(uiObject);
                 if (!string.IsNullOrEmpty(archetypeText))

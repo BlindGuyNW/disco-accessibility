@@ -103,6 +103,9 @@ namespace AccessibilityMod
                 
                 // Update inventory navigation
                 inventoryHandler.Update();
+                
+                // Update thought cabinet cache
+                ThoughtCabinetNavigationHandler.UpdateThoughtCache();
             }
             catch (Exception ex)
             {

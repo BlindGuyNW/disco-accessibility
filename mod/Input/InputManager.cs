@@ -76,6 +76,9 @@ namespace AccessibilityMod.Input
             {
                 DialogStateManager.ToggleDialogReading();
             }
+            
+            // Handle Thought Cabinet specific input
+            ThoughtCabinetNavigationHandler.HandleThoughtCabinetInput();
         }
 
         private void AnnounceCurrentSelection()
