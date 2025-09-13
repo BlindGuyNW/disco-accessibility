@@ -8,15 +8,23 @@ using AccessibilityMod.Utils;
 
 namespace AccessibilityMod.Navigation
 {
+    public enum SortingMode
+    {
+        Distance,
+        Directional
+    }
+
     public class NavigationStateManager
     {
         private Dictionary<ObjectCategory, List<MouseOverHighlight>> categorizedObjects = new Dictionary<ObjectCategory, List<MouseOverHighlight>>();
         private ObjectCategory currentCategory = ObjectCategory.NPCs;
         private int selectedObjectIndex = -1;
+        private SortingMode currentSortingMode = SortingMode.Directional;
 
         public ObjectCategory CurrentCategory => currentCategory;
         public int SelectedObjectIndex => selectedObjectIndex;
         public bool HasSelection => selectedObjectIndex >= 0 && HasObjectsInCategory(currentCategory);
+        public SortingMode CurrentSortingMode => currentSortingMode;
 
         public NavigationStateManager()
         {
@@ -41,28 +49,74 @@ namespace AccessibilityMod.Navigation
 
                 // Clear and populate categorized objects
                 ClearAllCategories();
-                
-                // Categorize all objects within range
-                foreach (var obj in registry)
+
+                // Special handling for Everything category - add ALL objects within range
+                if (targetCategory == ObjectCategory.Everything)
                 {
-                    if (obj == null || obj.transform == null) continue;
-                    
-                    float distance = Vector3.Distance(playerPos, obj.transform.position);
-                    
-                    // Apply category-specific distance limits
-                    float maxDistance = ObjectCategorizer.GetMaxDistanceForCategory(targetCategory);
-                    if (distance > maxDistance) continue;
-                    
-                    ObjectCategory objCategory = ObjectCategorizer.CategorizeObject(obj, playerPos);
-                    categorizedObjects[objCategory].Add(obj);
+                    float maxDistance = ObjectCategorizer.GetMaxDistanceForCategory(ObjectCategory.Everything);
+                    foreach (var obj in registry)
+                    {
+                        if (obj == null || obj.transform == null) continue;
+
+                        float distance = Vector3.Distance(playerPos, obj.transform.position);
+                        if (distance > maxDistance) continue;
+
+                        // Add to Everything category regardless of what it is
+                        categorizedObjects[ObjectCategory.Everything].Add(obj);
+                    }
+                }
+                else
+                {
+                    // Normal categorization for specific categories
+                    foreach (var obj in registry)
+                    {
+                        if (obj == null || obj.transform == null) continue;
+
+                        float distance = Vector3.Distance(playerPos, obj.transform.position);
+
+                        // Apply category-specific distance limits
+                        float maxDistance = ObjectCategorizer.GetMaxDistanceForCategory(targetCategory);
+                        if (distance > maxDistance) continue;
+
+                        ObjectCategory objCategory = ObjectCategorizer.CategorizeObject(obj, playerPos);
+                        categorizedObjects[objCategory].Add(obj);
+                    }
                 }
                 
-                // Sort each category by reachability-weighted distance to prioritize ground-level objects
+                // Sort each category based on current sorting mode
                 foreach (var categoryList in categorizedObjects.Values)
                 {
-                    categoryList.Sort((a, b) => 
-                        DirectionCalculator.CalculateReachabilityWeightedDistance(playerPos, a.transform.position)
-                        .CompareTo(DirectionCalculator.CalculateReachabilityWeightedDistance(playerPos, b.transform.position)));
+                    if (currentSortingMode == SortingMode.Directional)
+                    {
+                        // Sort by angular position (clockwise from North) with reachability weighting
+                        // First group by reachability-weighted distance ranges, then sort by angle within each range
+                        categoryList.Sort((a, b) =>
+                        {
+                            // Use reachability-weighted distance to maintain same-level priority
+                            float weightedDistA = DirectionCalculator.CalculateReachabilityWeightedDistance(playerPos, a.transform.position);
+                            float weightedDistB = DirectionCalculator.CalculateReachabilityWeightedDistance(playerPos, b.transform.position);
+
+                            // Define distance ranges (0-10m, 10-20m, 20-30m, etc.) based on weighted distance
+                            int rangeA = (int)(weightedDistA / 10);
+                            int rangeB = (int)(weightedDistB / 10);
+
+                            // Sort by weighted distance range first (maintains level priority)
+                            if (rangeA != rangeB)
+                                return rangeA.CompareTo(rangeB);
+
+                            // Within same range, sort by angle (clockwise from North)
+                            float angleA = DirectionCalculator.GetAngleToTarget(playerPos, a.transform.position);
+                            float angleB = DirectionCalculator.GetAngleToTarget(playerPos, b.transform.position);
+                            return angleA.CompareTo(angleB);
+                        });
+                    }
+                    else
+                    {
+                        // Original distance-based sorting with reachability weighting
+                        categoryList.Sort((a, b) =>
+                            DirectionCalculator.CalculateReachabilityWeightedDistance(playerPos, a.transform.position)
+                            .CompareTo(DirectionCalculator.CalculateReachabilityWeightedDistance(playerPos, b.transform.position)));
+                    }
                 }
                 
                 // Switch to selected category and reset selection
@@ -122,6 +176,18 @@ namespace AccessibilityMod.Navigation
             selectedObjectIndex = -1;
         }
 
+        public void ToggleSortingMode()
+        {
+            currentSortingMode = currentSortingMode == SortingMode.Distance
+                ? SortingMode.Directional
+                : SortingMode.Distance;
+        }
+
+        public void SetSortingMode(SortingMode mode)
+        {
+            currentSortingMode = mode;
+        }
+
         public NavigationInfo GetCurrentNavigationInfo(Vector3 playerPos)
         {
             var selectedObj = GetCurrentSelectedObject();
@@ -151,7 +217,8 @@ namespace AccessibilityMod.Navigation
                 Direction = direction,
                 CurrentIndex = selectedObjectIndex + 1,
                 TotalCount = GetObjectCountForCategory(currentCategory),
-                CategoryName = ObjectCategorizer.GetCategoryDisplayName(currentCategory)
+                CategoryName = ObjectCategorizer.GetCategoryDisplayName(currentCategory),
+                SortingMode = currentSortingMode
             };
         }
     }
@@ -165,6 +232,7 @@ namespace AccessibilityMod.Navigation
         public int CurrentIndex { get; set; }
         public int TotalCount { get; set; }
         public string CategoryName { get; set; } = "";
+        public SortingMode SortingMode { get; set; } = SortingMode.Directional;
 
         public string FormatAnnouncement()
         {
@@ -173,7 +241,8 @@ namespace AccessibilityMod.Navigation
                 return $"No {CategoryName.ToLower()}s nearby";
             }
 
-            return $"{CategoryName} {CurrentIndex} of {TotalCount}: {ObjectName}, " +
+            string sortModeHint = SortingMode == SortingMode.Directional ? " (clockwise)" : " (by distance)";
+            return $"{CategoryName} {CurrentIndex} of {TotalCount}{sortModeHint}: {ObjectName}, " +
                    $"{Distance:F0} meters {Direction}. Press period to cycle, comma to navigate.";
         }
     }

@@ -130,6 +130,34 @@ namespace AccessibilityMod.Navigation
             movementController.UpdateMovementProgress();
         }
 
+        public void ToggleSortingMode()
+        {
+            try
+            {
+                stateManager.ToggleSortingMode();
+
+                // Re-sort current category with new mode
+                Vector3 playerPos = GameObjectUtils.GetPlayerPosition();
+                if (playerPos != Vector3.zero && stateManager.HasSelection)
+                {
+                    // Update objects with new sorting
+                    stateManager.UpdateCategorizedObjects(playerPos, stateManager.CurrentCategory);
+                }
+
+                string modeName = stateManager.CurrentSortingMode == SortingMode.Directional
+                    ? "directional (clockwise)"
+                    : "distance";
+
+                string announcement = $"Sorting mode changed to {modeName}";
+                MelonLogger.Msg($"[SMART NAV] {announcement}");
+                TolkScreenReader.Instance.Speak(announcement, true);
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"[SMART NAV] Error toggling sorting mode: {ex}");
+            }
+        }
+
         public void TestRegistryAccess()
         {
             try

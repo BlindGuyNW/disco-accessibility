@@ -23,10 +23,10 @@ namespace AccessibilityMod.Input
                 AnnounceCurrentSelection();
             }
             
-            // Test hotkey: Semicolon to scan entire scene registry
+            // Toggle sorting mode: Semicolon (;) - toggles between distance and directional sorting
             if (UnityEngine.Input.GetKeyDown(KeyCode.Semicolon))
             {
-                navigationSystem.TestRegistryAccess();
+                navigationSystem.ToggleSortingMode();
             }
             
             // Distance-based scene scanner: Quote (')

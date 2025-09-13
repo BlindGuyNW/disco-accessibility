@@ -8,7 +8,7 @@ namespace AccessibilityMod.Utils
         {
             Vector3 direction = (to - from).normalized;
             float angle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-            
+
             // Convert to cardinal directions
             if (angle < -157.5f || angle > 157.5f) return "south";
             if (angle >= -157.5f && angle < -112.5f) return "southwest";
@@ -18,8 +18,24 @@ namespace AccessibilityMod.Utils
             if (angle >= 22.5f && angle < 67.5f) return "northeast";
             if (angle >= 67.5f && angle < 112.5f) return "east";
             if (angle >= 112.5f && angle < 157.5f) return "southeast";
-            
+
             return "unknown direction";
+        }
+
+        /// <summary>
+        /// Calculate angle from player to target in degrees (0-360).
+        /// 0 degrees is North, 90 is East, 180 is South, 270 is West.
+        /// Used for directional sorting of objects.
+        /// </summary>
+        public static float GetAngleToTarget(Vector3 from, Vector3 to)
+        {
+            Vector3 direction = (to - from).normalized;
+            float angle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+
+            // Normalize to 0-360 range (0 = North, clockwise)
+            if (angle < 0) angle += 360f;
+
+            return angle;
         }
 
         public static float CalculateDistance(Vector3 from, Vector3 to)

@@ -57,10 +57,10 @@ namespace AccessibilityMod.Navigation
         {
             return category switch
             {
-                ObjectCategory.NPCs => 50f,         // Important people can be further
-                ObjectCategory.Locations => 50f,    // Doors/exits can be further  
+                ObjectCategory.NPCs => 70f,         // Important people can be further
+                ObjectCategory.Locations => 70f,    // Doors/exits can be further
                 ObjectCategory.Loot => 30f,         // Containers usually nearby
-                ObjectCategory.Everything => 50f,   // Same range as NPCs and locations
+                ObjectCategory.Everything => float.MaxValue,  // No limit - emergency catchall for EVERYTHING in scene
                 _ => 30f
             };
         }
