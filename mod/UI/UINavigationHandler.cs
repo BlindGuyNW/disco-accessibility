@@ -58,6 +58,12 @@ namespace AccessibilityMod.UI
                         // Check if this is a dialog response button selection
                         CheckForDialogSelection(currentSelection);
                         
+                        // Skip journal elements as they're handled by JournalPatches
+                        if (currentSelection != null && currentSelection.GetComponent<Il2CppSunshine.Journal.JournalTaskUI>() != null)
+                        {
+                            return; // Journal elements are handled by their own patches
+                        }
+                        
                         // Extract text and format for speech with UI context  
                         string speechText = UIElementFormatter.FormatUIElementForSpeech(currentSelection);
                         

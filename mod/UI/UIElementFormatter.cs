@@ -106,6 +106,8 @@ namespace AccessibilityMod.UI
                     return thoughtCabinetText;
                 }
                 
+                // Journal elements are filtered out at UINavigationHandler level
+                
                 // Check for character creation elements
                 string archetypeText = CharacterCreationFormatter.GetArchetypeInformation(uiObject);
                 if (!string.IsNullOrEmpty(archetypeText))
