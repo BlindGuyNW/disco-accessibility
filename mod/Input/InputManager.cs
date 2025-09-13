@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using AccessibilityMod.Navigation;
 using AccessibilityMod.UI;
+using AccessibilityMod.Patches;
 using MelonLoader;
 
 namespace AccessibilityMod.Input
@@ -76,7 +77,13 @@ namespace AccessibilityMod.Input
             {
                 DialogStateManager.ToggleDialogReading();
             }
-            
+
+            // Toggle orb announcements: Zero (0)
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha0))
+            {
+                OrbTextVocalizationPatches.ToggleOrbAnnouncements();
+            }
+
             // Handle Thought Cabinet specific input
             ThoughtCabinetNavigationHandler.HandleThoughtCabinetInput();
         }

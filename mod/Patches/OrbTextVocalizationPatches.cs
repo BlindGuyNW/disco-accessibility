@@ -11,6 +11,15 @@ namespace AccessibilityMod.Patches
     [HarmonyPatch]
     public static class OrbTextVocalizationPatches
     {
+        private static bool orbAnnouncementsEnabled = true;
+
+        public static void ToggleOrbAnnouncements()
+        {
+            orbAnnouncementsEnabled = !orbAnnouncementsEnabled;
+            string status = orbAnnouncementsEnabled ? "enabled" : "disabled";
+            TolkScreenReader.Instance.Speak($"Orb announcements {status}", true);
+            MelonLogger.Msg($"[ORB TOGGLE] Orb announcements {status}");
+        }
         /// <summary>
         /// Patch for FloatFactory.ShowFloat(string, Transform) to vocalize text
         /// </summary>
@@ -20,6 +29,8 @@ namespace AccessibilityMod.Patches
         {
             try
             {
+                if (!orbAnnouncementsEnabled) return;
+
                 if (!string.IsNullOrEmpty(text))
                 {
                     TolkScreenReader.Instance.Speak($"Orb text: {text.Trim()}", true);
@@ -40,6 +51,8 @@ namespace AccessibilityMod.Patches
         {
             try
             {
+                if (!orbAnnouncementsEnabled) return;
+
                 if (!string.IsNullOrEmpty(text))
                 {
                     TolkScreenReader.Instance.Speak($"Orb text: {text.Trim()}", true);
@@ -60,6 +73,8 @@ namespace AccessibilityMod.Patches
         {
             try
             {
+                if (!orbAnnouncementsEnabled) return;
+
                 if (__result != null)
                 {
                     string displayedText = __result.text;
@@ -88,6 +103,8 @@ namespace AccessibilityMod.Patches
         {
             try
             {
+                if (!orbAnnouncementsEnabled) return;
+
                 if (__result != null)
                 {
                     string displayedText = __result.text;
@@ -116,6 +133,8 @@ namespace AccessibilityMod.Patches
         {
             try
             {
+                if (!orbAnnouncementsEnabled) return;
+
                 if (!string.IsNullOrEmpty(value))
                 {
                     TolkScreenReader.Instance.Speak($"Float text: {value.Trim()}", true);
