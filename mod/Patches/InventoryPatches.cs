@@ -359,34 +359,36 @@ namespace AccessibilityMod.Patches
                 var inventoryData = Il2CppSunshine.Metric.InventoryViewData.Singleton;
                 if (inventoryData != null)
                 {
-                    // Get the current tab from InventoryNavigationHandler
-                    var currentTab = InventoryNavigationHandler.Instance?.GetCurrentTab() ?? Il2Cpp.ItemTabGroup.TOOLS;
-                    
-                    // Access the tabContents for the current tab only
                     var tabContents = inventoryData.tabContents;
-                    if (tabContents != null && tabContents.ContainsKey(currentTab))
+                    if (tabContents == null) return null;
+
+                    // Check if we're in pawn shop by looking at active view type
+                    var currentView = UnityEngine.Object.FindObjectOfType<Il2CppSunshine.Views.View>();
+                    bool isInPawnShop = currentView != null &&
+                                       currentView.GetViewType() == Il2CppSunshine.Views.ViewType.INVENTORY_PAWN;
+
+                    if (isInPawnShop)
                     {
-                        var currentTabItems = tabContents[currentTab];
-                        if (currentTabItems != null && currentTabItems.ContainsKey(slotIndex))
+                        // In pawn shop, look directly in PAWNABLES tab data
+                        if (tabContents.ContainsKey(Il2Cpp.ItemTabGroup.PAWNABLES))
                         {
-                            string itemName = currentTabItems[slotIndex];
-                            if (!string.IsNullOrEmpty(itemName))
+                            var pawnablesItems = tabContents[Il2Cpp.ItemTabGroup.PAWNABLES];
+                            if (pawnablesItems != null && pawnablesItems.ContainsKey(slotIndex))
                             {
-                                MelonLogger.Msg($"[InventoryHelper] Found item '{itemName}' in current tab '{currentTab}' at slot {slotIndex}");
-                                
-                                // Try to get the actual InventoryItem object for full information
-                                var library = inventoryData.GetLibrary();
-                                if (library != null)
-                                {
-                                    var inventoryItem = library.GetByName(itemName);
-                                    if (inventoryItem != null)
-                                    {
-                                        return FormatInventoryItemForSpeech(inventoryItem);
-                                    }
-                                }
-                                
-                                // Fallback to just the item name
-                                return itemName;
+                                return GetFormattedItemName(pawnablesItems[slotIndex], inventoryData);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Normal tabbed inventory
+                        var currentTab = InventoryNavigationHandler.Instance?.GetCurrentTab() ?? Il2Cpp.ItemTabGroup.TOOLS;
+                        if (tabContents.ContainsKey(currentTab))
+                        {
+                            var currentTabItems = tabContents[currentTab];
+                            if (currentTabItems != null && currentTabItems.ContainsKey(slotIndex))
+                            {
+                                return GetFormattedItemName(currentTabItems[slotIndex], inventoryData);
                             }
                         }
                     }
@@ -397,6 +399,22 @@ namespace AccessibilityMod.Patches
                 MelonLogger.Msg($"Error getting inventory item at slot {slotIndex}: {ex.Message}");
             }
             return null;
+        }
+
+        private static string GetFormattedItemName(string itemName, Il2CppSunshine.Metric.InventoryViewData inventoryData)
+        {
+            if (string.IsNullOrEmpty(itemName)) return null;
+
+            var library = inventoryData.GetLibrary();
+            if (library != null)
+            {
+                var inventoryItem = library.GetByName(itemName);
+                if (inventoryItem != null)
+                {
+                    return FormatInventoryItemForSpeech(inventoryItem);
+                }
+            }
+            return itemName;
         }
 
         private static string FormatInventoryItemForSpeech(Il2CppSunshine.Metric.InventoryItem item)
@@ -442,7 +460,16 @@ namespace AccessibilityMod.Patches
                 // Add item value if it exists
                 if (item.itemValue > 0)
                 {
-                    result.Append($". Value: {item.itemValue} reál");
+                    // itemValue is stored in cents
+                    if (item.itemValue < 100)
+                    {
+                        result.Append($". Value: {item.itemValue} cents");
+                    }
+                    else
+                    {
+                        decimal valueInReal = item.itemValue / 100m;
+                        result.Append($". Value: {valueInReal:F2} reál");
+                    }
                 }
                 
                 return result.ToString();
