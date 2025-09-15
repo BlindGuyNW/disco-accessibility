@@ -33,12 +33,13 @@ namespace AccessibilityMod.UI
                 if (uiObject == null) return null;
 
                 // First check if this is a StatPanel with tooltip support
+                // BUT ONLY IN GAMEPLAY - not during character creation!
                 var statPanel = uiObject.GetComponentInParent<Il2Cpp.StatPanel>();
-                if (statPanel != null)
+                if (statPanel != null && IsInGameplayContext(uiObject))
                 {
                     try
                     {
-                        // Try to get rich tooltip information for stats
+                        // Try to get rich tooltip information for stats (gameplay only)
                         var modifiable = statPanel.GetModifiable();
                         if (modifiable != null)
                         {

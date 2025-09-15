@@ -8,12 +8,22 @@ using UnityEngine;
 namespace AccessibilityMod.UI
 {
     /// <summary>
+    /// Dialog reading modes
+    /// </summary>
+    public enum DialogReadingMode
+    {
+        Disabled,     // No dialog reading
+        Full,         // Read speaker and dialog text
+        SpeakerOnly   // Only announce speaker names
+    }
+
+    /// <summary>
     /// Manages dialog state, tracking conversations and speaker identification
     /// </summary>
     public static class DialogStateManager
     {
-        // Toggle for dialog reading mode
-        private static bool isDialogReadingEnabled = false;
+        // Current dialog reading mode
+        private static DialogReadingMode dialogReadingMode = DialogReadingMode.Disabled;
         
         // Track recent dialog to avoid duplicates
         private static Queue<string> recentDialogQueue = new Queue<string>();
@@ -28,22 +38,55 @@ namespace AccessibilityMod.UI
         private static int selectedResponseIndex = -1;
         
         /// <summary>
-        /// Gets whether dialog reading mode is enabled
+        /// Gets whether dialog reading mode is enabled (Full or SpeakerOnly)
         /// </summary>
-        public static bool IsDialogReadingEnabled => isDialogReadingEnabled;
+        public static bool IsDialogReadingEnabled => dialogReadingMode != DialogReadingMode.Disabled;
+
+        /// <summary>
+        /// Gets the current dialog reading mode
+        /// </summary>
+        public static DialogReadingMode CurrentDialogMode => dialogReadingMode;
+
+        /// <summary>
+        /// Gets whether we should read full dialog (not just speaker)
+        /// </summary>
+        public static bool ShouldReadFullDialog => dialogReadingMode == DialogReadingMode.Full;
+
+        /// <summary>
+        /// Gets whether we should only announce speakers
+        /// </summary>
+        public static bool IsSpeakerOnlyMode => dialogReadingMode == DialogReadingMode.SpeakerOnly;
         
         /// <summary>
-        /// Toggle dialog reading mode on/off
+        /// Toggle dialog reading mode between Disabled -> Full -> SpeakerOnly -> Disabled
         /// </summary>
         public static void ToggleDialogReading()
         {
-            isDialogReadingEnabled = !isDialogReadingEnabled;
-            
-            string status = isDialogReadingEnabled ? "enabled" : "disabled";
-            string announcement = $"Dialog reading with speaker identification {status}";
-            
+            // Cycle through the modes
+            switch (dialogReadingMode)
+            {
+                case DialogReadingMode.Disabled:
+                    dialogReadingMode = DialogReadingMode.Full;
+                    break;
+                case DialogReadingMode.Full:
+                    dialogReadingMode = DialogReadingMode.SpeakerOnly;
+                    break;
+                case DialogReadingMode.SpeakerOnly:
+                    dialogReadingMode = DialogReadingMode.Disabled;
+                    break;
+            }
+
+            // Announce the new mode
+            string announcement = dialogReadingMode switch
+            {
+                DialogReadingMode.Disabled => "Dialog reading disabled",
+                DialogReadingMode.Full => "Dialog reading enabled: Full dialog with speakers",
+                DialogReadingMode.SpeakerOnly => "Dialog reading enabled: Speaker names only",
+                _ => "Dialog reading mode changed"
+            };
+
             TolkScreenReader.Instance.Speak(announcement, true);
-            MelonLogger.Msg($"[DIALOG] Reading mode {status}");
+            MelonLogger.Msg($"[DIALOG] Reading mode changed to: {dialogReadingMode}");
         }
         
         /// <summary>
@@ -124,7 +167,7 @@ namespace AccessibilityMod.UI
                     // Debug logging removed
                     
                     // If this is a single response that wasn't clearly announced, announce it now
-                    if (currentResponses.Count == 1 && !isDialogReadingEnabled)
+                    if (currentResponses.Count == 1 && !IsDialogReadingEnabled)
                     {
                         // This helps catch those single "Continue" options
                         TolkScreenReader.Instance.Speak($"Selected: {selectedResponse}", true);

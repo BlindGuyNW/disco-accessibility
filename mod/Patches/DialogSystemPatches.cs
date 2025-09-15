@@ -17,6 +17,11 @@ namespace AccessibilityMod.Patches
         private static string lastSpokenDialog = "";
         private static float lastDialogTime = 0f;
         private static readonly float DIALOG_COOLDOWN = 0.5f; // 500ms cooldown to prevent spam
+
+        // Track the last speaker for speaker-only mode
+        private static string lastAnnouncedSpeaker = "";
+        private static float lastSpeakerTime = 0f;
+        private static readonly float SPEAKER_COOLDOWN = 1.0f; // 1 second cooldown for same speaker
         
         /// <summary>
         /// Patch LogRenderer.AddToLog to capture localized dialog text as it's rendered to the UI
@@ -30,32 +35,61 @@ namespace AccessibilityMod.Patches
                 {
                     if (entry == null) return;
                     
-                    // Check if dialog reading is enabled
+                    // Check if any dialog reading mode is enabled
                     if (!DialogStateManager.IsDialogReadingEnabled) return;
-                    
+
                     // Get localized dialog text and speaker name from FinalEntry
                     string dialogText = entry.spokenLine ?? "";
                     string speakerName = entry.speakerName ?? "";
-                    
+
                     // Skip if no text to speak
-                    if (string.IsNullOrEmpty(dialogText)) 
+                    if (string.IsNullOrEmpty(dialogText))
                     {
                         MelonLogger.Msg($"[DIALOG] Got FinalEntry but no spokenLine. Speaker: '{speakerName}'");
                         return;
                     }
-                    
-                    // Format the output with speaker identification
-                    string formattedDialog = FormatDialogWithSpeaker(speakerName, dialogText);
-                    
-                    // Check for duplicates and cooldown
-                    if (formattedDialog != lastSpokenDialog || 
-                        (UnityEngine.Time.time - lastDialogTime) > DIALOG_COOLDOWN)
+
+                    // Handle different dialog modes
+                    if (DialogStateManager.IsSpeakerOnlyMode)
                     {
-                        // Announce the localized dialog with speaker
-                        TolkScreenReader.Instance.Speak(formattedDialog, false);
-                        
-                        lastSpokenDialog = formattedDialog;
-                        lastDialogTime = UnityEngine.Time.time;
+                        // Speaker-only mode: Just announce who's speaking (but skip "You")
+                        if (!string.IsNullOrEmpty(speakerName))
+                        {
+                            string cleanSpeaker = CleanSpeakerName(speakerName);
+
+                            // Skip announcing "You" in speaker-only mode
+                            if (cleanSpeaker.Equals("You", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return;
+                            }
+
+                            // Only announce if it's a different speaker or enough time has passed
+                            if (cleanSpeaker != lastAnnouncedSpeaker ||
+                                (UnityEngine.Time.time - lastSpeakerTime) > SPEAKER_COOLDOWN)
+                            {
+                                string speakerAnnouncement = FormatSpeakerOnly(cleanSpeaker);
+                                TolkScreenReader.Instance.Speak(speakerAnnouncement, false);
+
+                                lastAnnouncedSpeaker = cleanSpeaker;
+                                lastSpeakerTime = UnityEngine.Time.time;
+                            }
+                        }
+                    }
+                    else if (DialogStateManager.ShouldReadFullDialog)
+                    {
+                        // Full dialog mode: Read everything
+                        string formattedDialog = FormatDialogWithSpeaker(speakerName, dialogText);
+
+                        // Check for duplicates and cooldown
+                        if (formattedDialog != lastSpokenDialog ||
+                            (UnityEngine.Time.time - lastDialogTime) > DIALOG_COOLDOWN)
+                        {
+                            // Announce the localized dialog with speaker
+                            TolkScreenReader.Instance.Speak(formattedDialog, false);
+
+                            lastSpokenDialog = formattedDialog;
+                            lastDialogTime = UnityEngine.Time.time;
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -178,6 +212,29 @@ namespace AccessibilityMod.Patches
             return speakerName.Equals("Narrative", StringComparison.OrdinalIgnoreCase) ||
                    speakerName.Equals("Narrator", StringComparison.OrdinalIgnoreCase) ||
                    string.IsNullOrEmpty(speakerName);
+        }
+
+        /// <summary>
+        /// Format speaker name for speaker-only mode
+        /// </summary>
+        private static string FormatSpeakerOnly(string speakerName)
+        {
+            if (IsSkillName(speakerName))
+            {
+                return $"{speakerName} skill";
+            }
+            else if (IsNarrative(speakerName))
+            {
+                return "Narrative";
+            }
+            else if (speakerName.Equals("You", StringComparison.OrdinalIgnoreCase))
+            {
+                return "You";
+            }
+            else
+            {
+                return speakerName;
+            }
         }
     }
 }
