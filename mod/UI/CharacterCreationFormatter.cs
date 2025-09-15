@@ -7,8 +7,10 @@ using Il2CppTMPro;
 using Il2Cpp;
 using Il2CppSunshine;
 using Il2CppSunshine.Metric;
+using Il2CppFortressOccident;
 using Il2CppDiscoPages.Elements.MainMenu;
 using Il2CppPages.MainMenu;
+using Il2CppPages.Gameplay.Charsheet;
 using Il2CppI2.Loc;
 using Il2CppCollageMode.Scripts.Localization;
 using AccessibilityMod.Utils;
@@ -30,6 +32,39 @@ namespace AccessibilityMod.UI
             {
                 if (uiObject == null) return null;
 
+                // First check if this is a StatPanel with tooltip support
+                var statPanel = uiObject.GetComponentInParent<Il2Cpp.StatPanel>();
+                if (statPanel != null)
+                {
+                    try
+                    {
+                        // Try to get rich tooltip information for stats
+                        var modifiable = statPanel.GetModifiable();
+                        if (modifiable != null)
+                        {
+                            string tooltipData = Il2Cpp.CharacterSheetInfoPanel.GatherModifiableData(modifiable);
+                            if (!string.IsNullOrEmpty(tooltipData))
+                            {
+                                // Add the total value at the end for convenience
+                                int totalValue = modifiable.value;
+                                string result = $"{tooltipData}\nTotal: {totalValue}";
+
+                                // Get the attribute name from the object
+                                string attributeName = GetAttributeNameFromObject(uiObject);
+                                if (!string.IsNullOrEmpty(attributeName))
+                                {
+                                    return $"{attributeName}: {result}";
+                                }
+                                return result;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MelonLogger.Warning($"Error getting stat tooltip data: {ex.Message}");
+                    }
+                }
+
                 // Check if we're in character creation by looking for specific parent hierarchy
                 var parent = uiObject.transform.parent;
                 if (parent != null && parent.name == "Abilities")
@@ -40,7 +75,7 @@ namespace AccessibilityMod.UI
                         // This is a character creation attribute element
                         string attributeName = uiObject.name;
                         string speechText = TextExtractor.ExtractBestTextContent(uiObject);
-                        
+
                         if (!string.IsNullOrEmpty(speechText) && !string.IsNullOrEmpty(attributeName))
                         {
                             // Try to get displayed stat description first
@@ -57,10 +92,10 @@ namespace AccessibilityMod.UI
                                     return $"{attributeName}: {speechText} - {displayedDescription}";
                                 }
                             }
-                            
+
                             // Fallback to hardcoded descriptions
                             string fallbackDescription = GetAttributeDescription(attributeName);
-                            
+
                             if (speechText.Length <= 2) // Likely a number value
                             {
                                 string points = speechText == "1" ? "point" : "points";
@@ -92,21 +127,97 @@ namespace AccessibilityMod.UI
             {
                 if (uiObject == null) return null;
 
-                // Check if this is a skill selection button (Parent: SKILL_NAME, Grandparent: Skills)
+                // Check if this object is part of a SkillPortraitPanel
+                var skillPanel = uiObject.GetComponentInParent<Il2Cpp.SkillPortraitPanel>();
+                if (skillPanel != null && skillPanel.currentSkill != null)
+                {
+                    var skill = skillPanel.currentSkill;
+                    var skillType = skillPanel.skill;
+
+                    // Get the localized skill name
+                    string skillName = Il2CppSunshine.Metric.Skill.SkillTypeToLocalizedName(skillType, true);
+
+                    // Check if we're in gameplay (not character creation)
+                    // In gameplay, we want rich tooltip information
+                    if (IsInGameplayContext(uiObject))
+                    {
+                        try
+                        {
+                            // Try to get rich tooltip information
+                            var modifiable = skillPanel.GetModifiable();
+                            if (modifiable != null)
+                            {
+                                string tooltipData = Il2Cpp.CharacterSheetInfoPanel.GatherModifiableData(modifiable);
+                                if (!string.IsNullOrEmpty(tooltipData))
+                                {
+                                    // Add the total value at the end for convenience
+                                    int totalValue = modifiable.value;
+                                    return $"{skillName}: {tooltipData}\nTotal: {totalValue}";
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MelonLogger.Warning($"Error getting tooltip data: {ex.Message}");
+                        }
+
+                        // Fallback to basic mechanical information using panel values
+                        string result = $"{skillName}: {skillPanel.statValue}";
+
+                        // Add rank if different from stat value
+                        if (skillPanel.rankValue != skillPanel.statValue)
+                        {
+                            result += $" (Base: {skillPanel.rankValue}";
+                            int modifier = skillPanel.statValue - skillPanel.rankValue;
+                            if (modifier > 0)
+                                result += $", +{modifier} bonus";
+                            else if (modifier < 0)
+                                result += $", {modifier} penalty";
+                            result += ")";
+                        }
+
+                        return result;
+                    }
+                    else
+                    {
+                        // Character creation - provide descriptions
+                        string description = FindDisplayedSkillDescription(skillPanel.gameObject, skillName);
+                        if (!string.IsNullOrEmpty(description))
+                        {
+                            return description;
+                        }
+
+                        // Fallback to hardcoded descriptions
+                        return GetHardcodedSkillDescription(skillType.ToString());
+                    }
+                }
+
+                // Fallback: Check for skill components without SkillPortraitPanel
+                // This handles other skill UI elements that might not have the panel
                 var parent = uiObject.transform.parent;
-                if (parent != null && parent.parent != null && 
-                    parent.parent.name == "Skills" && uiObject.name == "Select Button")
+                if (parent != null && parent.parent != null &&
+                    parent.parent.name == "Skills")
                 {
                     string skillName = parent.name;
-                    
-                    // Try to get rich description from game data first
+
+                    // In gameplay, just return the skill name with any visible values
+                    if (IsInGameplayContext(uiObject))
+                    {
+                        string basicText = TextExtractor.ExtractBestTextContent(uiObject);
+                        if (!string.IsNullOrEmpty(basicText))
+                        {
+                            return $"{skillName.Replace('_', ' ')}: {basicText}";
+                        }
+                        return skillName.Replace('_', ' ');
+                    }
+
+                    // Character creation - try to get descriptions
                     string gameDescription = GetGameSkillDescription(parent.gameObject, skillName);
                     if (!string.IsNullOrEmpty(gameDescription))
                     {
                         return gameDescription;
                     }
-                    
-                    // Fallback to our descriptions if game data not available
+
                     return GetHardcodedSkillDescription(skillName);
                 }
 
@@ -167,6 +278,72 @@ namespace AccessibilityMod.UI
         }
 
         #region Private Helper Methods
+
+        /// <summary>
+        /// Get attribute name from UI object context
+        /// </summary>
+        private static string GetAttributeNameFromObject(GameObject uiObject)
+        {
+            try
+            {
+                // Check object name first
+                string objectName = uiObject.name.ToLower();
+                if (objectName.Contains("intellect")) return "Intellect";
+                if (objectName.Contains("psyche")) return "Psyche";
+                if (objectName.Contains("physique")) return "Physique";
+                if (objectName.Contains("motorics")) return "Motorics";
+
+                // Check parent hierarchy
+                Transform current = uiObject.transform;
+                while (current != null)
+                {
+                    string name = current.name.ToLower();
+                    if (name.Contains("intellect")) return "Intellect";
+                    if (name.Contains("psyche")) return "Psyche";
+                    if (name.Contains("physique")) return "Physique";
+                    if (name.Contains("motorics")) return "Motorics";
+                    current = current.parent;
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error getting attribute name from object: {ex}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Check if we're in gameplay context (not character creation)
+        /// </summary>
+        private static bool IsInGameplayContext(GameObject uiObject)
+        {
+            try
+            {
+                // First try to use World.RunningOrCollage which indicates if the game world is active
+                // This is a static property that should be true during gameplay, false in menus
+                if (Il2Cpp.World.RunningOrCollage)
+                {
+                    return true;
+                }
+
+                // Also check the ApplicationManager singleton as a secondary check
+                var appManager = ApplicationManager.Singleton;
+                if (appManager != null && appManager.IsGameArea)
+                {
+                    return true;
+                }
+
+                // Default to false (character creation) to ensure we show descriptions
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Warning($"Error checking game context: {ex.Message}");
+                return false;
+            }
+        }
 
         /// <summary>
         /// Find displayed stat description from UI
@@ -238,9 +415,9 @@ namespace AccessibilityMod.UI
             try
             {
                 string description = TextExtractor.FindDisplayedDescription(
-                    skillParent, 
-                    text => TextExtractor.IsLikelySkillDescriptionText(text, skillName), 
-                    3, 
+                    skillParent,
+                    text => TextExtractor.IsLikelySkillDescriptionText(text, skillName),
+                    3,
                     $"skill {skillName}"
                 );
 
@@ -252,7 +429,7 @@ namespace AccessibilityMod.UI
                     {
                         cleanedName = skillName.Replace('_', ' ');
                     }
-                    
+
                     return $"{cleanedName}: {description}";
                 }
 
@@ -333,7 +510,7 @@ namespace AccessibilityMod.UI
         /// <summary>
         /// Get hardcoded skill descriptions as fallback
         /// </summary>
-        private static string GetHardcodedSkillDescription(string skillName)
+        public static string GetHardcodedSkillDescription(string skillName)
         {
             return skillName.ToUpper() switch
             {

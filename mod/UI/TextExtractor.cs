@@ -231,30 +231,57 @@ namespace AccessibilityMod.UI
         /// </summary>
         public static bool IsLikelyStatDescriptionText(string text, string statName = "")
         {
-            if (string.IsNullOrEmpty(text) || text.Length < 15)
+            if (string.IsNullOrEmpty(text) || text.Length < 10)
                 return false;
-                
+
             // Skip if it's just the stat name itself
             if (!string.IsNullOrEmpty(statName) && text.Trim().Equals(statName, StringComparison.OrdinalIgnoreCase))
                 return false;
-                
+
             // Skip pure numbers or very short text
             if (text.All(c => char.IsDigit(c) || char.IsWhiteSpace(c)))
                 return false;
-                
-            // Skip common UI text that's not descriptions  
+
+            // Skip common UI text that's not descriptions
             string lowerText = text.ToLower();
-            if (lowerText.Contains("button") || lowerText.Contains("select") || 
+            if (lowerText.Contains("button") || lowerText.Contains("select") ||
                 (lowerText.Contains("point") && lowerText.Length < 20))
                 return false;
-                
-            // Look for description-like content - stat-related keywords
+
+            // If we have a specific stat name, look for stat-specific descriptions
+            if (!string.IsNullOrEmpty(statName))
+            {
+                string lowerStatName = statName.ToLower();
+
+                // Look for stat-specific keywords
+                switch (lowerStatName)
+                {
+                    case "intellect":
+                        return lowerText.Contains("brain power") || lowerText.Contains("smart") ||
+                               lowerText.Contains("intelligence") || lowerText.Contains("mental") ||
+                               lowerText.Contains("logic") || lowerText.Contains("reasoning");
+
+                    case "psyche":
+                        return lowerText.Contains("sensitivity") || lowerText.Contains("emotional") ||
+                               lowerText.Contains("empathy") || lowerText.Contains("social") ||
+                               lowerText.Contains("feelings") || lowerText.Contains("emotionally intelligent");
+
+                    case "physique":
+                        return lowerText.Contains("musculature") || lowerText.Contains("strong") ||
+                               lowerText.Contains("strength") || lowerText.Contains("physical") ||
+                               lowerText.Contains("muscle") || lowerText.Contains("body");
+
+                    case "motorics":
+                        return lowerText.Contains("senses") || lowerText.Contains("agile") ||
+                               lowerText.Contains("agility") || lowerText.Contains("coordination") ||
+                               lowerText.Contains("dexterity") || lowerText.Contains("motor");
+                }
+            }
+
+            // General fallback - look for description-like content
             return lowerText.Contains("affects") || lowerText.Contains("determines") ||
                    lowerText.Contains("governs") || lowerText.Contains("influences") ||
                    lowerText.Contains("skills") || lowerText.Contains("abilities") ||
-                   lowerText.Contains("logic") || lowerText.Contains("reasoning") ||
-                   lowerText.Contains("empathy") || lowerText.Contains("physical") ||
-                   lowerText.Contains("coordination") || lowerText.Contains("dexterity") ||
                    (text.Contains(".") && text.Split('.').Length > 1); // Multiple sentences
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -54,19 +55,33 @@ namespace AccessibilityMod.UI
                     if (currentSelection != lastSelectedUIObject)
                     {
                         lastSelectedUIObject = currentSelection;
-                        
+
+
                         // Check if this is a dialog response button selection
                         CheckForDialogSelection(currentSelection);
-                        
+
                         // Skip journal elements as they're handled by JournalPatches
                         if (currentSelection != null && currentSelection.GetComponent<Il2CppSunshine.Journal.JournalTaskUI>() != null)
                         {
                             return; // Journal elements are handled by their own patches
                         }
-                        
-                        // Extract text and format for speech with UI context  
+
+                        // Handle character sheet skill elements with delay
+                        if (currentSelection != null)
+                        {
+                            var skillPanel = currentSelection.GetComponentInParent<Il2Cpp.SkillPortraitPanel>();
+                            if (skillPanel != null)
+                            {
+
+                                // Schedule delayed skill announcement to allow game to update descriptions
+                                MelonCoroutines.Start(DelayedSkillAnnouncement(currentSelection));
+                                return;
+                            }
+                        }
+
+                        // Extract text and format for speech with UI context
                         string speechText = UIElementFormatter.FormatUIElementForSpeech(currentSelection);
-                        
+
                         if (!string.IsNullOrEmpty(speechText))
                         {
                             TolkScreenReader.Instance.Speak(speechText, false);
@@ -305,6 +320,23 @@ namespace AccessibilityMod.UI
             }
             
             return false;
+        }
+
+        /// <summary>
+        /// Delayed skill announcement to allow game time to update descriptions
+        /// </summary>
+        private static IEnumerator DelayedSkillAnnouncement(GameObject skillSelection)
+        {
+            // Wait a bit for the game to update skill descriptions
+            yield return new WaitForSeconds(0.1f);
+
+            // Extract text and format for speech with UI context
+            string speechText = UIElementFormatter.FormatUIElementForSpeech(skillSelection);
+
+            if (!string.IsNullOrEmpty(speechText))
+            {
+                TolkScreenReader.Instance.Speak(speechText, false);
+            }
         }
 
     }

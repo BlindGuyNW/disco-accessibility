@@ -84,6 +84,12 @@ namespace AccessibilityMod.Input
                 OrbTextVocalizationPatches.ToggleOrbAnnouncements();
             }
 
+            // Character status announcement: H key
+            if (UnityEngine.Input.GetKeyDown(KeyCode.H))
+            {
+                Patches.CharacterStatusAnnouncement.AnnounceFullStatus();
+            }
+
             // Handle Thought Cabinet specific input
             ThoughtCabinetNavigationHandler.HandleThoughtCabinetInput();
         }
