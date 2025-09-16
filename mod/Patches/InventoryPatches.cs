@@ -381,8 +381,27 @@ namespace AccessibilityMod.Patches
                     }
                     else
                     {
-                        // Normal tabbed inventory
-                        var currentTab = InventoryNavigationHandler.Instance?.GetCurrentTab() ?? Il2Cpp.ItemTabGroup.TOOLS;
+                        // Normal tabbed inventory - read current tab from game's state
+                        Il2Cpp.ItemTabGroup currentTab = Il2Cpp.ItemTabGroup.TOOLS; // fallback
+
+                        // Try PageSystem first (the active inventory system)
+                        var pageSystemPanel = UnityEngine.Object.FindObjectOfType<Il2CppDiscoPages.Elements.Inventory.PageSystemInventoryTabPanel>();
+                        if (pageSystemPanel != null)
+                        {
+                            currentTab = pageSystemPanel.CurrentItemTabGroup;
+                            MelonLogger.Msg($"[InventoryHighlighter] PageSystem current tab: {currentTab}");
+                        }
+                        else
+                        {
+                            // Fallback to singleton if PageSystem not available
+                            var inventoryTabPanel = Il2Cpp.InventoryTabPanel.Singleton;
+                            if (inventoryTabPanel != null)
+                            {
+                                currentTab = inventoryTabPanel.CurrentItemTabGroup;
+                                MelonLogger.Msg($"[InventoryHighlighter] Singleton current tab: {currentTab}");
+                            }
+                        }
+
                         if (tabContents.ContainsKey(currentTab))
                         {
                             var currentTabItems = tabContents[currentTab];

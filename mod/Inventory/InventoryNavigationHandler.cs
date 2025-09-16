@@ -444,7 +444,26 @@ namespace AccessibilityMod.Inventory
 
         public ItemTabGroup GetCurrentTab()
         {
-            return currentTab;
+            // Read current tab from game's state instead of tracking it ourselves
+            Il2Cpp.ItemTabGroup gameTab = Il2Cpp.ItemTabGroup.TOOLS; // fallback
+
+            // Try PageSystem first (the active inventory system)
+            var pageSystemPanel = UnityEngine.Object.FindObjectOfType<Il2CppDiscoPages.Elements.Inventory.PageSystemInventoryTabPanel>();
+            if (pageSystemPanel != null)
+            {
+                gameTab = pageSystemPanel.CurrentItemTabGroup;
+            }
+            else
+            {
+                // Fallback to singleton if PageSystem not available
+                var inventoryTabPanel = Il2Cpp.InventoryTabPanel.Singleton;
+                if (inventoryTabPanel != null)
+                {
+                    gameTab = inventoryTabPanel.CurrentItemTabGroup;
+                }
+            }
+
+            return gameTab;
         }
     }
 }

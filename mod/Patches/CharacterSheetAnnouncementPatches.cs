@@ -35,20 +35,20 @@ namespace AccessibilityMod.Patches
                 var characterSheet = world.you;
                 var playerCharacter = PlayerCharacter.Singleton;
 
-                // Get max health and morale from skills
+                // Get max health and morale from skills using maximumValue
                 var endurance = characterSheet.GetSkill(SkillType.ENDURANCE);
                 var volition = characterSheet.GetSkill(SkillType.VOLITION);
 
                 string announcement = $"Health: {currentHealth:F0}";
                 if (endurance != null)
                 {
-                    announcement += $" of {endurance.value}";
+                    announcement += $" of {endurance.maximumValue}";
                 }
 
                 announcement += $", Morale: {currentMorale:F0}";
                 if (volition != null)
                 {
-                    announcement += $" of {volition.value}";
+                    announcement += $" of {volition.maximumValue}";
                 }
 
                 // Add healing items information
