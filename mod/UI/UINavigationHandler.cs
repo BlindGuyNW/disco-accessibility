@@ -60,6 +60,16 @@ namespace AccessibilityMod.UI
                         // Check if this is a dialog response button selection
                         CheckForDialogSelection(currentSelection);
 
+                        // Skip skill check buttons as they're handled by SkillCheckTooltipPatches
+                        if (currentSelection != null)
+                        {
+                            var responseButton = currentSelection.GetComponent<Il2Cpp.SunshineResponseButton>();
+                            if (responseButton != null && (responseButton.whiteCheck || responseButton.redCheck))
+                            {
+                                return; // Skill check buttons are handled by SkillCheckTooltipPatches
+                            }
+                        }
+
                         // Skip journal elements as they're handled by JournalPatches
                         if (currentSelection != null && currentSelection.GetComponent<Il2CppSunshine.Journal.JournalTaskUI>() != null)
                         {
