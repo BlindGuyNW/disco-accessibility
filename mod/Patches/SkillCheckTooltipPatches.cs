@@ -15,11 +15,6 @@ namespace AccessibilityMod.Patches
     /// </summary>
     public static class SkillCheckTooltipPatches
     {
-        // Track last announced check to avoid spam
-        private static string lastAnnouncedCheck = "";
-        private static float lastCheckTime = 0f;
-        private static readonly float CHECK_COOLDOWN = 0.5f;
-
         /// <summary>
         /// Patch CheckAdvisor.SetAdvisorContent to capture skill check details when tooltip is shown
         /// </summary>
@@ -32,35 +27,44 @@ namespace AccessibilityMod.Patches
                 {
                     if (data == null) return;
 
-                    // Build comprehensive check information
-                    var checkInfo = ExtractCheckInformation(data);
-
-                    // Check for duplicates and cooldown
-                    if (checkInfo != lastAnnouncedCheck ||
-                        (UnityEngine.Time.time - lastCheckTime) > CHECK_COOLDOWN)
-                    {
-                        // Announce the detailed check information
-                        TolkScreenReader.Instance.Speak(checkInfo, true);
-
-                        lastAnnouncedCheck = checkInfo;
-                        lastCheckTime = UnityEngine.Time.time;
-
-                        MelonLogger.Msg($"[SKILL CHECK TOOLTIP] {checkInfo}");
-                    }
+                    // Wait for UI to settle before reading button state
+                    MelonLoader.MelonCoroutines.Start(DelayedSkillCheckAnnouncement(data));
                 }
                 catch (Exception ex)
                 {
                     MelonLogger.Error($"Error in CheckAdvisor.SetAdvisorContent patch: {ex}");
                 }
             }
+
+            private static System.Collections.IEnumerator DelayedSkillCheckAnnouncement(CheckResult data)
+            {
+                yield return new UnityEngine.WaitForSeconds(0.25f);
+
+                try
+                {
+                    // Build comprehensive check information
+                    var checkInfo = ExtractCheckInformation(data);
+
+                    // Announce the detailed check information
+                    TolkScreenReader.Instance.Speak(checkInfo, true);
+                    MelonLogger.Msg($"[SKILL CHECK TOOLTIP] {checkInfo}");
+                }
+                catch (Exception ex)
+                {
+                    MelonLogger.Error($"Error in delayed skill check announcement: {ex}");
+                }
+            }
         }
 
         /// <summary>
         /// Patch CheckTooltip.SetTooltipContent to capture skill check details from regular tooltip
+        /// DISABLED - Using CheckAdvisor patch instead to avoid duplicate announcements
         /// </summary>
-        [HarmonyPatch(typeof(CheckTooltip), "SetTooltipContent")]
+        // [HarmonyPatch(typeof(CheckTooltip), "SetTooltipContent")]
         public static class CheckTooltip_SetTooltipContent_Patch
         {
+            // DISABLED to prevent duplicate announcements
+            /*
             public static void Postfix(CheckTooltip __instance, TooltipSource tooltipSource)
             {
                 try
@@ -72,17 +76,8 @@ namespace AccessibilityMod.Patches
 
                     if (!string.IsNullOrEmpty(tooltipInfo))
                     {
-                        // Check for duplicates and cooldown
-                        if (tooltipInfo != lastAnnouncedCheck ||
-                            (UnityEngine.Time.time - lastCheckTime) > CHECK_COOLDOWN)
-                        {
-                            TolkScreenReader.Instance.Speak(tooltipInfo, true);
-
-                            lastAnnouncedCheck = tooltipInfo;
-                            lastCheckTime = UnityEngine.Time.time;
-
-                            MelonLogger.Msg($"[CHECK TOOLTIP] {tooltipInfo}");
-                        }
+                        TolkScreenReader.Instance.Speak(tooltipInfo, true);
+                        MelonLogger.Msg($"[CHECK TOOLTIP] {tooltipInfo}");
                     }
                 }
                 catch (Exception ex)
@@ -90,6 +85,7 @@ namespace AccessibilityMod.Patches
                     MelonLogger.Error($"Error in CheckTooltip.SetTooltipContent patch: {ex}");
                 }
             }
+            */
         }
 
         /// <summary>
@@ -101,27 +97,28 @@ namespace AccessibilityMod.Patches
 
             try
             {
-                // Try to find the corresponding dialog response button to get the check type and text
+                // Find the currently selected/highlighted button
                 string checkType = "Check";
                 string dialogText = "";
 
-                var responseButtons = UnityEngine.Object.FindObjectsOfType<Il2Cpp.SunshineResponseButton>();
-                foreach (var button in responseButtons)
+                // Look for the currently selected UI element
+                var currentSelection = UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;
+                if (currentSelection != null)
                 {
-                    if (button != null && (button.whiteCheck || button.redCheck))
+                    var selectedButton = currentSelection.GetComponent<Il2Cpp.SunshineResponseButton>();
+                    if (selectedButton != null && (selectedButton.whiteCheck || selectedButton.redCheck))
                     {
-                        checkType = button.whiteCheck ? "White Check" : "Red Check";
+                        checkType = selectedButton.whiteCheck ? "White Check" : "Red Check";
 
-                        // Get dialog text
-                        if (button.optionText?.textField?.text != null)
+                        // Get dialog text from the selected button
+                        if (selectedButton.optionText?.textField?.text != null)
                         {
-                            dialogText = button.optionText.textField.text.Trim();
+                            dialogText = selectedButton.optionText.textField.text.Trim();
                         }
-                        else if (button.optionText?.originalText != null)
+                        else if (selectedButton.optionText?.originalText != null)
                         {
-                            dialogText = button.optionText.originalText.Trim();
+                            dialogText = selectedButton.optionText.originalText.Trim();
                         }
-                        break; // Take the first match
                     }
                 }
 
@@ -173,7 +170,7 @@ namespace AccessibilityMod.Patches
                     modifierText += ", Passive check";
                 }
 
-                // Format the final announcement with dialog first if available
+                // Format the final announcement - ALWAYS put dialog first when available, then check details
                 if (!string.IsNullOrEmpty(dialogText))
                 {
                     // Clean up the dialog text by removing the skill check notation that's already announced

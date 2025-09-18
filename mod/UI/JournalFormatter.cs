@@ -80,7 +80,7 @@ namespace AccessibilityMod.UI
                         string timeStr = FormatClockTime(taskUI.aquisitionTime);
                         if (!string.IsNullOrEmpty(timeStr))
                         {
-                            sb.Append($" - acquired at {timeStr}");
+                            sb.Append($" - acquired {timeStr}");
                         }
                     }
                     catch
@@ -299,16 +299,53 @@ namespace AccessibilityMod.UI
             try
             {
                 if (clockTime == null) return null;
-                
-                // Try to get formatted time string
+
+                var sb = new StringBuilder();
+
+                // Get day of week
+                try
+                {
+                    var dayOfWeek = clockTime.GetDayOfWeek();
+                    sb.Append(dayOfWeek.ToString());
+                    sb.Append(" at ");
+                }
+                catch
+                {
+                    // If we can't get day of week, try day counter
+                    try
+                    {
+                        int dayCounter = clockTime.DayCounter;
+                        sb.Append($"Day {dayCounter}, ");
+                    }
+                    catch
+                    {
+                        // Ignore if we can't get day info
+                    }
+                }
+
+                // Get time string
                 string timeStr = clockTime.ToString();
                 if (!string.IsNullOrEmpty(timeStr))
                 {
-                    return timeStr;
+                    sb.Append(timeStr);
                 }
-                
-                // Can't access individual properties, just return null
-                return null;
+                else
+                {
+                    // Try to build time manually
+                    try
+                    {
+                        int hours = clockTime.Hours;
+                        int minutes = clockTime.Minutes;
+                        sb.Append($"{hours:D2}:{minutes:D2}");
+                    }
+                    catch
+                    {
+                        // If we can't get time components, just return what we have
+                    }
+                }
+
+                string result = sb.ToString();
+                return string.IsNullOrEmpty(result) ? null : result;
             }
             catch
             {
