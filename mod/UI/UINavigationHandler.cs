@@ -15,6 +15,7 @@ namespace AccessibilityMod.UI
         
         // Track dialog responses for better single option detection
         private static List<Il2Cpp.SunshineResponseButton> currentResponseButtons = new List<Il2Cpp.SunshineResponseButton>();
+        private static Il2Cpp.SunshineContinueButton lastSunshineContinueButton = null;
         private static float lastResponseCheckTime = 0f;
         private static readonly float RESPONSE_CHECK_INTERVAL = 0.5f; // Check for responses every 500ms
         
@@ -32,6 +33,7 @@ namespace AccessibilityMod.UI
                 if (Time.time - lastResponseCheckTime > RESPONSE_CHECK_INTERVAL)
                 {
                     CheckDialogResponses();
+                    CheckContinueButton();
                     lastResponseCheckTime = Time.time;
                 }
                 
@@ -59,6 +61,26 @@ namespace AccessibilityMod.UI
 
                         // Check if this is a dialog response button selection
                         CheckForDialogSelection(currentSelection);
+
+                        // Check if this is a SunshineContinueButton selection
+                        if (currentSelection != null)
+                        {
+                            var sunshineContinueButton = currentSelection.GetComponent<Il2Cpp.SunshineContinueButton>();
+                            var sunshineContinueButtonParent = currentSelection.GetComponentInParent<Il2Cpp.SunshineContinueButton>();
+
+                            if (sunshineContinueButton != null || sunshineContinueButtonParent != null)
+                            {
+                                // Extract text from the button
+                                string continueText = UIElementFormatter.FormatUIElementForSpeech(currentSelection);
+                                if (string.IsNullOrEmpty(continueText))
+                                {
+                                    continueText = "Continue";
+                                }
+
+                                TolkScreenReader.Instance.Speak(continueText, false);
+                                return;
+                            }
+                        }
 
                         // Skip skill check buttons as they're handled by SkillCheckTooltipPatches
                         if (currentSelection != null)
@@ -193,6 +215,52 @@ namespace AccessibilityMod.UI
             }
         }
         
+        /// <summary>
+        /// Check for SunshineContinueButton (single Continue button in dialogs)
+        /// </summary>
+        private static void CheckContinueButton()
+        {
+            try
+            {
+                // Find SunshineContinueButton in the scene
+                var sunshineContinueButton = UnityEngine.Object.FindObjectOfType<Il2Cpp.SunshineContinueButton>();
+
+                if (sunshineContinueButton != null && sunshineContinueButton.gameObject.activeInHierarchy)
+                {
+                    // Check if this is a new continue button or if it has changed
+                    if (sunshineContinueButton != lastSunshineContinueButton)
+                    {
+                        lastSunshineContinueButton = sunshineContinueButton;
+
+                        // Try to extract text from the button
+                        string continueText = UIElementFormatter.FormatUIElementForSpeech(sunshineContinueButton.gameObject);
+                        if (string.IsNullOrEmpty(continueText))
+                        {
+                            continueText = "Continue";
+                        }
+
+                        // Announce the continue button
+                        TolkScreenReader.Instance.Speak(continueText, false);
+
+                        // Also notify DialogStateManager about this single response
+                        DialogStateManager.OnResponsesUpdated(new List<string> { continueText });
+                    }
+                }
+                else
+                {
+                    // Clear tracking if no continue button is present
+                    if (lastSunshineContinueButton != null)
+                    {
+                        lastSunshineContinueButton = null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error checking continue button: {ex}");
+            }
+        }
+
         /// <summary>
         /// Check if the currently selected UI element is a dialog response button and notify DialogStateManager
         /// </summary>
