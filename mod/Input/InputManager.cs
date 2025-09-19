@@ -90,6 +90,12 @@ namespace AccessibilityMod.Input
                 Patches.CharacterStatusAnnouncement.AnnounceFullStatus();
             }
 
+            // Character stats announcement (time, money, experience): X key
+            if (UnityEngine.Input.GetKeyDown(KeyCode.X))
+            {
+                Patches.CharacterStatsAnnouncement.AnnounceCharacterStats();
+            }
+
             // Handle Thought Cabinet specific input
             ThoughtCabinetNavigationHandler.HandleThoughtCabinetInput();
         }
