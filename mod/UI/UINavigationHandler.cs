@@ -98,6 +98,12 @@ namespace AccessibilityMod.UI
                             return; // Journal elements are handled by their own patches
                         }
 
+                        // Skip QuicktravelButton as they're handled by MapPatches
+                        if (currentSelection != null && currentSelection.GetComponent<Il2CppSunshine.Journal.QuicktravelButton>() != null)
+                        {
+                            return; // Fast travel buttons are handled by MapPatches
+                        }
+
                         // Handle character sheet skill elements with delay
                         if (currentSelection != null)
                         {
