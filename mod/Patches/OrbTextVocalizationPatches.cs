@@ -5,6 +5,7 @@ using Il2Cpp;
 using UnityEngine;
 using MelonLoader;
 using Il2CppTMPro;
+using AccessibilityMod.Settings;
 
 namespace AccessibilityMod.Patches
 {
@@ -13,12 +14,21 @@ namespace AccessibilityMod.Patches
     {
         private static bool orbAnnouncementsEnabled = true;
 
+        static OrbTextVocalizationPatches()
+        {
+            // Load initial setting from preferences
+            orbAnnouncementsEnabled = AccessibilityPreferences.GetOrbAnnouncements();
+        }
+
         public static void ToggleOrbAnnouncements()
         {
             orbAnnouncementsEnabled = !orbAnnouncementsEnabled;
             string status = orbAnnouncementsEnabled ? "enabled" : "disabled";
             TolkScreenReader.Instance.Speak($"Orb announcements {status}", true);
             MelonLogger.Msg($"[ORB TOGGLE] Orb announcements {status}");
+
+            // Save the new setting
+            AccessibilityPreferences.SetOrbAnnouncements(orbAnnouncementsEnabled);
         }
         /// <summary>
         /// Patch for FloatFactory.ShowFloat(string, Transform) to vocalize text

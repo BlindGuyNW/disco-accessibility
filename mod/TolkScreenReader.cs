@@ -1,6 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using AccessibilityMod.Settings;
+using MelonLoader;
 
 namespace AccessibilityMod
 {
@@ -32,10 +34,17 @@ namespace AccessibilityMod
             {
                 Tolk.TrySAPI(true);  // Allow SAPI as fallback
                 Tolk.PreferSAPI(false);  // Prefer real screen readers
-                
+
                 Tolk.Load();
                 isInitialized = Tolk.IsLoaded();
-                
+
+                // Load settings after initialization
+                if (isInitialized)
+                {
+                    globalInterruptEnabled = AccessibilityPreferences.GetSpeechInterrupt();
+                    MelonLogger.Msg($"[TOLK] Speech interrupt loaded from preferences: {globalInterruptEnabled}");
+                }
+
                 return isInitialized;
             }
             catch (Exception)
@@ -93,6 +102,10 @@ namespace AccessibilityMod
             string status = globalInterruptEnabled ? "enabled" : "disabled";
             // Always interrupt this announcement so user gets immediate feedback
             Speak($"Speech interrupt {status}", true);
+
+            // Save the new setting
+            AccessibilityPreferences.SetSpeechInterrupt(globalInterruptEnabled);
+            MelonLogger.Msg($"[TOLK] Speech interrupt {status} and saved");
         }
 
         public bool IsGlobalInterruptEnabled()

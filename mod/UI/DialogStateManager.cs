@@ -4,6 +4,7 @@ using Il2Cpp;
 using Il2CppPixelCrushers.DialogueSystem;
 using MelonLoader;
 using UnityEngine;
+using AccessibilityMod.Settings;
 
 namespace AccessibilityMod.UI
 {
@@ -22,7 +23,7 @@ namespace AccessibilityMod.UI
     /// </summary>
     public static class DialogStateManager
     {
-        // Current dialog reading mode
+        // Current dialog reading mode - loaded from settings
         private static DialogReadingMode dialogReadingMode = DialogReadingMode.Disabled;
         
         // Track recent dialog to avoid duplicates
@@ -37,6 +38,12 @@ namespace AccessibilityMod.UI
         private static List<string> currentResponses = new List<string>();
         private static int selectedResponseIndex = -1;
         
+        static DialogStateManager()
+        {
+            // Load initial dialog mode from preferences
+            dialogReadingMode = AccessibilityPreferences.GetDialogMode();
+        }
+
         /// <summary>
         /// Gets whether dialog reading mode is enabled (Full or SpeakerOnly)
         /// </summary>
@@ -87,6 +94,9 @@ namespace AccessibilityMod.UI
 
             TolkScreenReader.Instance.Speak(announcement, true);
             MelonLogger.Msg($"[DIALOG] Reading mode changed to: {dialogReadingMode}");
+
+            // Save the new setting
+            AccessibilityPreferences.SetDialogMode(dialogReadingMode);
         }
         
         /// <summary>

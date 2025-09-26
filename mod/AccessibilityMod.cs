@@ -6,6 +6,7 @@ using AccessibilityMod.Navigation;
 using AccessibilityMod.Input;
 using AccessibilityMod.UI;
 using AccessibilityMod.Inventory;
+using AccessibilityMod.Settings;
 
 [assembly: MelonInfo(typeof(AccessibilityMod.AccessibilityMod), "Disco Elysium Accessibility Mod", "1.0.0", "YourName")]
 [assembly: MelonGame("ZAUM Studio", "Disco Elysium")]
@@ -22,7 +23,10 @@ namespace AccessibilityMod
         public override void OnInitializeMelon()
         {
             LoggerInstance.Msg("Accessibility Mod initializing...");
-            
+
+            // Initialize preferences
+            AccessibilityPreferences.Initialize();
+
             // Initialize Harmony patches
             try
             {
@@ -34,7 +38,7 @@ namespace AccessibilityMod
             {
                 LoggerInstance.Error($"Failed to apply Harmony patches: {ex}");
             }
-            
+
             // Initialize Tolk screen reader
             if (TolkScreenReader.Instance.Initialize())
             {
