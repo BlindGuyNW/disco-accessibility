@@ -98,6 +98,16 @@ namespace AccessibilityMod.UI
                             return; // Journal elements are handled by their own patches
                         }
 
+                        // Skip map tab skill checks as they're handled by MapTabSkillCheckPatches
+                        if (currentSelection != null)
+                        {
+                            if (currentSelection.GetComponent<Il2Cpp.JournalWhiteCheckUI>() != null ||
+                                currentSelection.GetComponent<Il2Cpp.PageSystemJournalWhiteCheckUI>() != null)
+                            {
+                                return; // Map tab skill checks are handled by MapTabSkillCheckPatches
+                            }
+                        }
+
                         // Skip QuicktravelButton as they're handled by MapPatches
                         if (currentSelection != null && currentSelection.GetComponent<Il2CppSunshine.Journal.QuicktravelButton>() != null)
                         {

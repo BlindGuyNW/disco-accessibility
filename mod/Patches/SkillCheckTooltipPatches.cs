@@ -122,6 +122,46 @@ namespace AccessibilityMod.Patches
                     }
                 }
 
+                // Build the check info using the shared method
+                string checkInfo = BuildCheckInfoString(check, checkType);
+
+                // Format the final announcement - ALWAYS put dialog first when available, then check details
+                if (!string.IsNullOrEmpty(dialogText))
+                {
+                    // Clean up the dialog text by removing the skill check notation that's already announced
+                    string cleanDialog = dialogText;
+                    if (cleanDialog.Contains("[") && cleanDialog.Contains("]"))
+                    {
+                        // Remove the [Skill - Difficulty X] part since we're announcing it separately
+                        int bracketStart = cleanDialog.IndexOf('[');
+                        int bracketEnd = cleanDialog.IndexOf(']');
+                        if (bracketStart >= 0 && bracketEnd > bracketStart)
+                        {
+                            cleanDialog = cleanDialog.Substring(bracketEnd + 1).Trim();
+                        }
+                    }
+
+                    return $"{cleanDialog}. {checkInfo}";
+                }
+                else
+                {
+                    return checkInfo;
+                }
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error extracting check information: {ex}");
+                return "Skill check information unavailable";
+            }
+        }
+
+        /// <summary>
+        /// Build a formatted string with check information - reusable for both dialog and map checks
+        /// </summary>
+        public static string BuildCheckInfoString(CheckResult check, string checkType = "Check")
+        {
+            try
+            {
                 // Get all the data we need
                 string skillName = check.SkillName();
                 string difficulty = check.difficulty;
@@ -170,32 +210,11 @@ namespace AccessibilityMod.Patches
                     modifierText += ", Passive check";
                 }
 
-                // Format the final announcement - ALWAYS put dialog first when available, then check details
-                if (!string.IsNullOrEmpty(dialogText))
-                {
-                    // Clean up the dialog text by removing the skill check notation that's already announced
-                    string cleanDialog = dialogText;
-                    if (cleanDialog.Contains("[") && cleanDialog.Contains("]"))
-                    {
-                        // Remove the [Skill - Difficulty X] part since we're announcing it separately
-                        int bracketStart = cleanDialog.IndexOf('[');
-                        int bracketEnd = cleanDialog.IndexOf(']');
-                        if (bracketStart >= 0 && bracketEnd > bracketStart)
-                        {
-                            cleanDialog = cleanDialog.Substring(bracketEnd + 1).Trim();
-                        }
-                    }
-
-                    return $"{cleanDialog}. {checkType}: {skillName} - {difficulty} {targetNumber}, {percentChance}% chance, Skill level {skillValue}{modifierText}";
-                }
-                else
-                {
-                    return $"{checkType}: {skillName} - {difficulty} {targetNumber}, {percentChance}% chance, Skill level {skillValue}{modifierText}";
-                }
+                return $"{checkType}: {skillName} - {difficulty} {targetNumber}, {percentChance}% chance, Skill level {skillValue}{modifierText}";
             }
             catch (Exception ex)
             {
-                MelonLogger.Error($"Error extracting check information: {ex}");
+                MelonLogger.Error($"Error building check info string: {ex}");
                 return "Skill check information unavailable";
             }
         }
