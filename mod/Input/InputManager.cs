@@ -96,6 +96,12 @@ namespace AccessibilityMod.Input
                 Patches.CharacterStatsAnnouncement.AnnounceCharacterStats();
             }
 
+            // Toggle speech interrupt mode: 8 key
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha8))
+            {
+                TolkScreenReader.Instance.ToggleGlobalInterrupt();
+            }
+
             // Handle Thought Cabinet specific input
             ThoughtCabinetNavigationHandler.HandleThoughtCabinetInput();
         }

@@ -12,6 +12,7 @@ namespace AccessibilityMod
         private static TolkScreenReader instance;
         private bool isInitialized = false;
         private bool suppressAnnouncements = false;
+        private bool globalInterruptEnabled = false;
 
         public static TolkScreenReader Instance
         {
@@ -81,9 +82,24 @@ namespace AccessibilityMod
         {
             if (!isInitialized || string.IsNullOrEmpty(text) || suppressAnnouncements) return false;
             text = StripHtmlTags(text);
-            return Tolk.Output(text, interrupt);
+            // Apply global interrupt setting - if enabled, always interrupt
+            bool effectiveInterrupt = interrupt || globalInterruptEnabled;
+            return Tolk.Output(text, effectiveInterrupt);
         }
-        
+
+        public void ToggleGlobalInterrupt()
+        {
+            globalInterruptEnabled = !globalInterruptEnabled;
+            string status = globalInterruptEnabled ? "enabled" : "disabled";
+            // Always interrupt this announcement so user gets immediate feedback
+            Speak($"Speech interrupt {status}", true);
+        }
+
+        public bool IsGlobalInterruptEnabled()
+        {
+            return globalInterruptEnabled;
+        }
+
         public void SuppressAnnouncements(bool suppress)
         {
             suppressAnnouncements = suppress;
@@ -93,7 +109,9 @@ namespace AccessibilityMod
         {
             if (!isInitialized || string.IsNullOrEmpty(text)) return false;
             text = StripHtmlTags(text);
-            return Tolk.Output(text, interrupt);
+            // Apply global interrupt setting - if enabled, always interrupt
+            bool effectiveInterrupt = interrupt || globalInterruptEnabled;
+            return Tolk.Output(text, effectiveInterrupt);
         }
 
         public bool Braille(string text)
