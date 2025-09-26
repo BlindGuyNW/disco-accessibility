@@ -1,6 +1,9 @@
 #!/bin/bash
 echo "Building Disco Elysium Accessibility Mod..."
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Check if DISCO_ELYSIUM_PATH environment variable is set
 if [ -z "$DISCO_ELYSIUM_PATH" ]; then
     echo "Warning: DISCO_ELYSIUM_PATH environment variable not set."
@@ -9,8 +12,8 @@ if [ -z "$DISCO_ELYSIUM_PATH" ]; then
     echo "Using: $DISCO_ELYSIUM_PATH"
 fi
 
-# Build the project
-dotnet build AccessibilityMod.csproj --configuration Release
+# Build the project (use full path to the project file)
+dotnet build "$SCRIPT_DIR/AccessibilityMod.csproj" --configuration Release
 
 if [ $? -eq 0 ]; then
     echo ""
