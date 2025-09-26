@@ -56,22 +56,38 @@ namespace AccessibilityMod.Utils
         {
             // Remove common Unity suffixes and prefixes
             string cleaned = rawName;
-            
+
             // Remove (Clone) suffix
             if (cleaned.EndsWith("(Clone)"))
                 cleaned = cleaned.Substring(0, cleaned.Length - 7);
-            
-            // Remove numbers and underscores at the end (e.g., "Container_01")
-            while (cleaned.Length > 0 && (char.IsDigit(cleaned[cleaned.Length - 1]) || cleaned[cleaned.Length - 1] == '_'))
+
+            // Remove trailing underscores only (preserve numbers for distinction)
+            while (cleaned.Length > 0 && cleaned[cleaned.Length - 1] == '_')
                 cleaned = cleaned.Substring(0, cleaned.Length - 1);
-            
+
             // Replace underscores with spaces
             cleaned = cleaned.Replace("_", " ");
-            
-            // Capitalize first letter
+
+            // Capitalize first letter of each word
             if (cleaned.Length > 0)
-                cleaned = char.ToUpper(cleaned[0]) + (cleaned.Length > 1 ? cleaned.Substring(1).ToLower() : "");
-            
+            {
+                var words = cleaned.Split(' ');
+                for (int i = 0; i < words.Length; i++)
+                {
+                    if (!string.IsNullOrEmpty(words[i]))
+                    {
+                        // Don't lowercase if the word is just numbers
+                        if (Regex.IsMatch(words[i], @"^\d+$"))
+                        {
+                            // Keep numbers as-is
+                            continue;
+                        }
+                        words[i] = char.ToUpper(words[i][0]) + (words[i].Length > 1 ? words[i].Substring(1).ToLower() : "");
+                    }
+                }
+                cleaned = string.Join(" ", words);
+            }
+
             return string.IsNullOrEmpty(cleaned) ? "Object" : cleaned;
         }
     }
