@@ -242,7 +242,7 @@ namespace AccessibilityMod.Navigation
             }
 
             string sortModeHint = SortingMode == SortingMode.Directional ? " (clockwise)" : " (by distance)";
-            return $"{ObjectName}  {Distance:F0} meters {Direction}, {CurrentIndex} of {TotalCount} {CategoryName}. " +
+            return $"{ObjectName} {Distance:F0} meters {Direction}, {CurrentIndex} of {TotalCount}. " +
                    "Press period to cycle, comma to navigate.";
         }
     }

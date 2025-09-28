@@ -50,7 +50,7 @@ namespace AccessibilityMod.Navigation
                 
                 // Announce category contents
                 var navInfo = stateManager.GetCurrentNavigationInfo(playerPos);
-                string announcement = navInfo.FormatAnnouncement();
+                string announcement = $"{category}: " +navInfo.FormatAnnouncement();
                 
                 MelonLogger.Msg($"[SMART NAV] {announcement}");
                 TolkScreenReader.Instance.Speak(announcement, true);
