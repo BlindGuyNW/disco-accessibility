@@ -142,9 +142,17 @@ namespace AccessibilityMod.Navigation
         public void CycleToNextObject()
         {
             if (!HasObjectsInCategory(currentCategory)) return;
-            
+
             var objects = categorizedObjects[currentCategory];
             selectedObjectIndex = (selectedObjectIndex + 1) % objects.Count;
+        }
+
+        public void CycleToPreviousObject()
+        {
+            if (!HasObjectsInCategory(currentCategory)) return;
+
+            var objects = categorizedObjects[currentCategory];
+            selectedObjectIndex = (selectedObjectIndex - 1 + objects.Count) % objects.Count;
         }
 
         public int GetObjectCountForCategory(ObjectCategory category)
@@ -242,8 +250,8 @@ namespace AccessibilityMod.Navigation
             }
 
             string sortModeHint = SortingMode == SortingMode.Directional ? " (clockwise)" : " (by distance)";
-            return $"{CategoryName} {CurrentIndex} of {TotalCount}{sortModeHint}: {ObjectName}, " +
-                   $"{Distance:F0} meters {Direction}. Press period to cycle, comma to navigate.";
+            return $"{ObjectName} {Distance:F0} meters {Direction}, {CurrentIndex} of {TotalCount}. " +
+                   "Press period to cycle, comma to navigate.";
         }
     }
 }

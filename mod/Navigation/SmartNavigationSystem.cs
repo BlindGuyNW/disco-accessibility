@@ -50,7 +50,7 @@ namespace AccessibilityMod.Navigation
                 
                 // Announce category contents
                 var navInfo = stateManager.GetCurrentNavigationInfo(playerPos);
-                string announcement = navInfo.FormatAnnouncement();
+                string announcement = $"{category}: " +navInfo.FormatAnnouncement();
                 
                 MelonLogger.Msg($"[SMART NAV] {announcement}");
                 TolkScreenReader.Instance.Speak(announcement, true);
@@ -62,7 +62,7 @@ namespace AccessibilityMod.Navigation
             }
         }
 
-        public void CycleWithinCategory()
+        public void CycleWithinCategory(bool backward = false)
         {
             try
             {
@@ -71,18 +71,21 @@ namespace AccessibilityMod.Navigation
                     TolkScreenReader.Instance.Speak("No objects in current category. Press [ for NPCs, ] for locations, \\ for containers, or = for everything.", true);
                     return;
                 }
-                
-                // Cycle to next object
-                stateManager.CycleToNextObject();
-                
+
+                // Cycle to next or previous object based on direction
+                if (backward)
+                    stateManager.CycleToPreviousObject();
+                else
+                    stateManager.CycleToNextObject();
+
                 // Find player position for announcement
                 Vector3 playerPos = GameObjectUtils.GetPlayerPosition();
                 if (playerPos == Vector3.zero) return;
-                
+
                 // Announce selected object
                 var navInfo = stateManager.GetCurrentNavigationInfo(playerPos);
                 string announcement = navInfo.FormatAnnouncement();
-                
+
                 MelonLogger.Msg($"[SMART NAV] {announcement}");
                 TolkScreenReader.Instance.Speak(announcement, true);
             }
