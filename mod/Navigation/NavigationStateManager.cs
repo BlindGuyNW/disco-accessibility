@@ -250,8 +250,8 @@ namespace AccessibilityMod.Navigation
             }
 
             string sortModeHint = SortingMode == SortingMode.Directional ? " (clockwise)" : " (by distance)";
-            return $"{CategoryName} {CurrentIndex} of {TotalCount}{sortModeHint}: {ObjectName}, " +
-                   $"{Distance:F0} meters {Direction}. Press period to cycle, comma to navigate.";
+            return $"{ObjectName} {Distance:F0} meters {Direction}, {CurrentIndex} of {TotalCount}. " +
+                   "Press period to cycle, comma to navigate.";
         }
     }
 }
