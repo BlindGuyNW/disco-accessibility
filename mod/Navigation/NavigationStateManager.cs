@@ -142,9 +142,17 @@ namespace AccessibilityMod.Navigation
         public void CycleToNextObject()
         {
             if (!HasObjectsInCategory(currentCategory)) return;
-            
+
             var objects = categorizedObjects[currentCategory];
             selectedObjectIndex = (selectedObjectIndex + 1) % objects.Count;
+        }
+
+        public void CycleToPreviousObject()
+        {
+            if (!HasObjectsInCategory(currentCategory)) return;
+
+            var objects = categorizedObjects[currentCategory];
+            selectedObjectIndex = (selectedObjectIndex - 1 + objects.Count) % objects.Count;
         }
 
         public int GetObjectCountForCategory(ObjectCategory category)

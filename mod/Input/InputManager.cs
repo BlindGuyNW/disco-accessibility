@@ -54,10 +54,11 @@ namespace AccessibilityMod.Input
                 navigationSystem.SelectCategory(ObjectCategory.Everything);
             }
             
-            // Cycle within current category: Period (.)
+            // Cycle within current category: Period (.) forward, Shift+Period backward
             if (UnityEngine.Input.GetKeyDown(KeyCode.Period))
             {
-                navigationSystem.CycleWithinCategory();
+                bool shiftHeld = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
+                navigationSystem.CycleWithinCategory(backward: shiftHeld);
             }
             
             // Navigate to selected object: Comma (,)
