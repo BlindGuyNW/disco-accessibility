@@ -83,12 +83,12 @@ namespace AccessibilityMod.Navigation
                 // Create proper Il2Cpp nullable float
                 var nullableHeading = new Il2CppSystem.Nullable<float>();
                 
-                // Try with WALK mode first (more reliable than AUTOMATIC)
-                character.SetDestination(destination, nullableHeading, MovementMode.WALK, false);
+                // Use RUN mode for faster travel to targets
+                character.SetDestination(destination, nullableHeading, MovementMode.RUN, false);
                 
                 MelonLogger.Msg($"[MOVEMENT] SetDestination succeeded for {objectName}");
                 TolkScreenReader.Instance.Speak(
-                    $"Walking to {objectName}, {distance:F1} meters away. Character will move automatically.", true);
+                    $"Running to {objectName}, {distance:F1} meters away. Character will move automatically.", true);
                 
                 // Start monitoring movement progress
                 StartMovementMonitoring(character, destination, objectName);
@@ -103,11 +103,11 @@ namespace AccessibilityMod.Navigation
                 {
                     MelonLogger.Msg("[MOVEMENT] Trying SetDestination with explicit heading...");
                     var heading = new Il2CppSystem.Nullable<float>(0f); // Face north
-                    character.SetDestination(destination, heading, MovementMode.WALK, false);
+                    character.SetDestination(destination, heading, MovementMode.RUN, false);
                     
                     MelonLogger.Msg($"[MOVEMENT] SetDestination with heading succeeded for {objectName}");
                     TolkScreenReader.Instance.Speak(
-                        $"Walking to {objectName}, {distance:F1} meters away. Character will move automatically.", true);
+                        $"Running to {objectName}, {distance:F1} meters away. Character will move automatically.", true);
                     
                     StartMovementMonitoring(character, destination, objectName);
                     return true;
