@@ -82,6 +82,8 @@ namespace AccessibilityMod
         
         public override void OnApplicationQuit()
         {
+            navigationSystem?.WaypointManager.SaveAllWaypoints();
+
             // Clean up Tolk when the game exits
             TolkScreenReader.Instance.Cleanup();
             LoggerInstance.Msg("Tolk cleaned up");

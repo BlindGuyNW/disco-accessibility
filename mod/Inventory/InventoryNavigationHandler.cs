@@ -402,7 +402,7 @@ namespace AccessibilityMod.Inventory
             if (string.IsNullOrEmpty(text)) return;
             if (text == lastAnnounced && Time.time - lastAnnouncementTime < ANNOUNCEMENT_COOLDOWN) return;
 
-            TolkScreenReader.Instance.Speak(text, false);
+            TolkScreenReader.Instance.Speak(text, true);
             lastAnnounced = text;
             lastAnnouncementTime = Time.time;
         }

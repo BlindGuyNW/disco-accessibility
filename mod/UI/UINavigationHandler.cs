@@ -77,7 +77,7 @@ namespace AccessibilityMod.UI
                                     continueText = "Continue";
                                 }
 
-                                TolkScreenReader.Instance.Speak(continueText, false);
+                                TolkScreenReader.Instance.Speak(continueText, true);
                                 return;
                             }
                         }
@@ -132,7 +132,7 @@ namespace AccessibilityMod.UI
 
                         if (!string.IsNullOrEmpty(speechText))
                         {
-                            TolkScreenReader.Instance.Speak(speechText, false);
+                            TolkScreenReader.Instance.Speak(speechText, true);
                             lastSpokenText = speechText;
                         }
                     }
@@ -429,7 +429,7 @@ namespace AccessibilityMod.UI
 
             if (!string.IsNullOrEmpty(speechText))
             {
-                TolkScreenReader.Instance.Speak(speechText, false);
+                TolkScreenReader.Instance.Speak(speechText, true);
             }
         }
 

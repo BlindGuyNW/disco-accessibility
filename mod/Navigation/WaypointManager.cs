@@ -2,17 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using MelonLoader;
 
 namespace AccessibilityMod.Navigation
 {
     public class Waypoint
     {
         public Waypoint(Vector3 position, string name, string sceneName)
+            : this(position, name, sceneName, DateTime.UtcNow)
+        {
+        }
+
+        public Waypoint(Vector3 position, string name, string sceneName, DateTime createdAtUtc)
         {
             Position = position;
             Name = name;
             SceneName = sceneName;
-            CreatedAtUtc = DateTime.UtcNow;
+            CreatedAtUtc = createdAtUtc;
         }
 
         public Vector3 Position { get; }
@@ -29,13 +35,30 @@ namespace AccessibilityMod.Navigation
 
     public class WaypointManager
     {
-        private readonly List<Waypoint> waypoints = new List<Waypoint>();
+        private readonly WaypointPersistence persistence;
+        private readonly List<Waypoint> waypoints;
         private readonly Dictionary<string, int> selectedIndicesByScene = new Dictionary<string, int>();
 
         public IReadOnlyList<Waypoint> Waypoints => waypoints;
         public int Count => waypoints.Count;
 
         public bool HasAnyWaypoints => waypoints.Count > 0;
+
+        public WaypointManager()
+        {
+            persistence = new WaypointPersistence();
+            waypoints = persistence.LoadWaypoints();
+
+            if (waypoints.Count > 0)
+            {
+                MelonLogger.Msg($"[WAYPOINTS] Loaded {waypoints.Count} saved waypoint" + (waypoints.Count == 1 ? string.Empty : "s") + ".");
+            }
+        }
+
+        public void SaveAllWaypoints()
+        {
+            persistence.SaveWaypoints(waypoints);
+        }
 
         public string GetDefaultName(string sceneName)
         {
@@ -51,6 +74,7 @@ namespace AccessibilityMod.Navigation
             var sceneWaypoints = GetWaypointsForScene(sceneName);
             selectedIndicesByScene[sceneName] = sceneWaypoints.Count - 1;
 
+            persistence.SaveWaypoints(waypoints);
             return waypoint;
         }
 
@@ -86,6 +110,7 @@ namespace AccessibilityMod.Navigation
                 selectedIndicesByScene[targetScene] = newIndex;
             }
 
+            persistence.SaveWaypoints(waypoints);
             return true;
         }
 
