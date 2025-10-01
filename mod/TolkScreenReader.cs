@@ -107,7 +107,14 @@ namespace AccessibilityMod
 
         public bool Speak(string text, bool interrupt = false, AnnouncementCategory category = AnnouncementCategory.Immediate, Audio.AnnouncementSource source = Audio.AnnouncementSource.Other)
         {
-            if (!isInitialized || string.IsNullOrEmpty(text) || suppressAnnouncements) return false;
+            return SendSpeech(text, interrupt, true);
+        }
+
+        private bool SendSpeech(string text, bool interrupt, bool respectSuppression)
+        {
+            if (!isInitialized || string.IsNullOrEmpty(text)) return false;
+            if (respectSuppression && suppressAnnouncements) return false;
+
             text = StripHtmlTags(text);
 
             // Route based on announcement category
@@ -150,11 +157,7 @@ namespace AccessibilityMod
 
         public bool Output(string text, bool interrupt = false)
         {
-            if (!isInitialized || string.IsNullOrEmpty(text)) return false;
-            text = StripHtmlTags(text);
-            // Apply global interrupt setting - if enabled, always interrupt
-            bool effectiveInterrupt = interrupt || globalInterruptEnabled;
-            return Tolk.Output(text, effectiveInterrupt);
+            return SendSpeech(text, interrupt, false);
         }
 
         public bool Braille(string text)
