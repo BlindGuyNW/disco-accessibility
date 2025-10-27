@@ -18,6 +18,31 @@ namespace AccessibilityMod.Input
 
         public void HandleInput()
         {
+            if (navigationSystem.IsWaypointNamingActive)
+            {
+                string typedCharacters = UnityEngine.Input.inputString;
+                if (!string.IsNullOrEmpty(typedCharacters))
+                {
+                    navigationSystem.HandleWaypointNamingInput(typedCharacters);
+                }
+
+                bool confirm = UnityEngine.Input.GetKeyDown(KeyCode.Return) || UnityEngine.Input.GetKeyDown(KeyCode.KeypadEnter);
+                bool cancel = UnityEngine.Input.GetKeyDown(KeyCode.Escape);
+
+                if (confirm)
+                {
+                    navigationSystem.ConfirmWaypointNaming();
+                }
+                else if (cancel)
+                {
+                    navigationSystem.CancelWaypointNaming();
+                }
+
+                Il2CppInControl.InputManager.ClearInputState();
+                UnityEngine.Input.ResetInputAxes();
+                return;
+            }
+
             // On-demand current selection announcement: Grave/Tilde key (`)
             if (UnityEngine.Input.GetKeyDown(KeyCode.BackQuote))
             {
@@ -36,14 +61,37 @@ namespace AccessibilityMod.Input
                 navigationSystem.ScanSceneByDistance();
             }
             
-            // Category selection keys (safe punctuation)
-            if (UnityEngine.Input.GetKeyDown(KeyCode.LeftBracket))  // [
+            bool leftBracketDown = UnityEngine.Input.GetKeyDown(KeyCode.LeftBracket);
+            bool rightBracketDown = UnityEngine.Input.GetKeyDown(KeyCode.RightBracket);
+            bool ctrlHeld = UnityEngine.Input.GetKey(KeyCode.LeftControl) || UnityEngine.Input.GetKey(KeyCode.RightControl);
+            bool altHeld = UnityEngine.Input.GetKey(KeyCode.LeftAlt) || UnityEngine.Input.GetKey(KeyCode.RightAlt);
+
+            // Category selection keys (safe punctuation) + modifiers for waypoints
+            if (leftBracketDown)
             {
-                navigationSystem.SelectCategory(ObjectCategory.NPCs);
+                if (altHeld)
+                {
+                    navigationSystem.StartWaypointCreation();
+                }
+                else if (ctrlHeld)
+                {
+                    navigationSystem.FocusWaypoints();
+                }
+                else
+                {
+                    navigationSystem.SelectCategory(ObjectCategory.NPCs);
+                }
             }
-            else if (UnityEngine.Input.GetKeyDown(KeyCode.RightBracket))  // ]
+            else if (rightBracketDown)  // ]
             {
-                navigationSystem.SelectCategory(ObjectCategory.Locations);
+                if (altHeld)
+                {
+                    navigationSystem.DeleteCurrentWaypoint();
+                }
+                else
+                {
+                    navigationSystem.SelectCategory(ObjectCategory.Locations);
+                }
             }
             else if (UnityEngine.Input.GetKeyDown(KeyCode.Backslash))  // \
             {

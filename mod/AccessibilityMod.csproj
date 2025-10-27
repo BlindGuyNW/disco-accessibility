@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <!-- MelonLoader references instead of PackageReference -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(DISCO_ELYSIUM_PATH)' != ''">
     <Reference Include="MelonLoader">
       <HintPath>$(DISCO_ELYSIUM_PATH)\MelonLoader\net6\MelonLoader.dll</HintPath>
       <Private>False</Private>
@@ -40,7 +40,7 @@
     </Reference>
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(DISCO_ELYSIUM_PATH)' != ''">
     <!-- Game assemblies from Il2CppAssemblies directory -->
     <Reference Include="Assembly-CSharp">
       <HintPath>$(DISCO_ELYSIUM_PATH)\MelonLoader\Il2CppAssemblies\Assembly-CSharp.dll</HintPath>
