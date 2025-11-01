@@ -44,7 +44,7 @@ namespace AccessibilityMod.Patches
 
                     if (!string.IsNullOrEmpty(notificationText))
                     {
-                        TolkScreenReader.Instance.Speak($"Notification: {notificationText}", true);
+                        TolkScreenReader.Instance.Speak($"Notification: {notificationText}", true, AnnouncementCategory.Queueable);
                     }
                 }
             }
@@ -70,7 +70,7 @@ namespace AccessibilityMod.Patches
                     string skillName = __instance.SkillName();
                     string difficulty = __instance.difficulty;
                     bool isSuccess = __instance.IsSuccess;
-                    
+
                     // Clean the original result text by removing HTML tags
                     string cleanResult = __result;
                     if (!string.IsNullOrEmpty(cleanResult))
@@ -78,27 +78,29 @@ namespace AccessibilityMod.Patches
                         cleanResult = System.Text.RegularExpressions.Regex.Replace(cleanResult, @"<[^>]*>", "");
                         cleanResult = cleanResult.Replace("[", "").Replace("]", "").Trim();
                     }
-                    
+
                     // Build the complete text: "SkillName Difficulty: Success/Failure"
                     string fullText = "";
                     if (!string.IsNullOrEmpty(skillName))
                     {
                         fullText = skillName;
-                        
+
                         if (!string.IsNullOrEmpty(difficulty))
                         {
                             fullText += " " + difficulty;
                         }
-                        
+
                         string result = isSuccess ? "Success" : "Failure";
                         fullText += ": " + result;
-                        
-                        TolkScreenReader.Instance.Speak($"Skill check: {fullText}", true);
+
+                        // The queue deduplication will handle filtering duplicates
+                        TolkScreenReader.Instance.Speak($"Skill check: {fullText}", true, AnnouncementCategory.Queueable);
                     }
                     else if (!string.IsNullOrEmpty(cleanResult))
                     {
                         // Fallback to cleaned result if we can't get skill name
-                        TolkScreenReader.Instance.Speak($"Skill check: {cleanResult}", true);
+                        // The queue deduplication will handle filtering duplicates
+                        TolkScreenReader.Instance.Speak($"Skill check: {cleanResult}", true, AnnouncementCategory.Queueable);
                     }
                 }
             }

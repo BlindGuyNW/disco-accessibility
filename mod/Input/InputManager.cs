@@ -79,6 +79,13 @@ namespace AccessibilityMod.Input
                 DialogStateManager.ToggleDialogReading();
             }
 
+            // Repeat last dialogue line: R key
+            if (UnityEngine.Input.GetKeyDown(KeyCode.R))
+            {
+                string lastDialogue = DialogSystemPatches.GetLastDialogueLine();
+                TolkScreenReader.Instance.Speak(lastDialogue, true, AnnouncementCategory.Immediate);
+            }
+
             // Toggle orb announcements: Zero (0)
             if (UnityEngine.Input.GetKeyDown(KeyCode.Alpha0))
             {

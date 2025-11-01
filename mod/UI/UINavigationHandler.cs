@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using MelonLoader;
+using AccessibilityMod.Audio;
 
 namespace AccessibilityMod.UI
 {
@@ -77,7 +78,11 @@ namespace AccessibilityMod.UI
                                     continueText = "Continue";
                                 }
 
-                                TolkScreenReader.Instance.Speak(continueText, false);
+                                // Queue if dialogue audio is playing, otherwise immediate
+                                var category = AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying()
+                                    ? AnnouncementCategory.Queueable
+                                    : AnnouncementCategory.Immediate;
+                                TolkScreenReader.Instance.Speak(continueText, false, category);
                                 return;
                             }
                         }
@@ -132,7 +137,12 @@ namespace AccessibilityMod.UI
 
                         if (!string.IsNullOrEmpty(speechText))
                         {
-                            TolkScreenReader.Instance.Speak(speechText, false);
+                            // If dialogue audio is playing, queue the announcement
+                            // Otherwise announce immediately for responsive UI navigation
+                            var category = AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying()
+                                ? AnnouncementCategory.Queueable
+                                : AnnouncementCategory.Immediate;
+                            TolkScreenReader.Instance.Speak(speechText, false, category);
                             lastSpokenText = speechText;
                         }
                     }
@@ -218,7 +228,11 @@ namespace AccessibilityMod.UI
                             // Make sure it's announced even if not selected yet
                             if (singleResponse != lastSpokenText)
                             {
-                                TolkScreenReader.Instance.Speak($"Single option: {singleResponse}", false);
+                                // Queue if dialogue audio is playing, otherwise immediate
+                                var category = AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying()
+                                    ? AnnouncementCategory.Queueable
+                                    : AnnouncementCategory.Immediate;
+                                TolkScreenReader.Instance.Speak($"Single option: {singleResponse}", false, category);
                                 lastSpokenText = singleResponse;
                             }
                         }
@@ -256,7 +270,11 @@ namespace AccessibilityMod.UI
                         }
 
                         // Announce the continue button
-                        TolkScreenReader.Instance.Speak(continueText, false);
+                        // Queue if dialogue audio is playing, otherwise immediate
+                        var category = AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying()
+                            ? AnnouncementCategory.Queueable
+                            : AnnouncementCategory.Immediate;
+                        TolkScreenReader.Instance.Speak(continueText, false, category);
 
                         // Also notify DialogStateManager about this single response
                         DialogStateManager.OnResponsesUpdated(new List<string> { continueText });
@@ -429,7 +447,11 @@ namespace AccessibilityMod.UI
 
             if (!string.IsNullOrEmpty(speechText))
             {
-                TolkScreenReader.Instance.Speak(speechText, false);
+                // Queue if dialogue audio is playing, otherwise immediate
+                var category = AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying()
+                    ? AnnouncementCategory.Queueable
+                    : AnnouncementCategory.Immediate;
+                TolkScreenReader.Instance.Speak(speechText, false, category);
             }
         }
 
