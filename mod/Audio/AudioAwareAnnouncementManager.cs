@@ -4,6 +4,17 @@ using System.Collections.Generic;
 
 namespace AccessibilityMod.Audio
 {
+    /// <summary>
+    /// Types of announcements for selective queue management
+    /// </summary>
+    public enum AnnouncementSource
+    {
+        UI,              // UI navigation, dialogue options, continue buttons
+        Dialogue,        // Dialogue text and speakers
+        Notification,    // Game notifications, skill checks, task completions
+        Other            // Everything else
+    }
+
     public class AudioAwareAnnouncementManager
     {
         private static AudioAwareAnnouncementManager _instance;
@@ -25,6 +36,7 @@ namespace AccessibilityMod.Audio
             public bool Interrupt { get; set; }
             public float QueueTime { get; set; }
             public bool HasWaitedForAudio { get; set; }
+            public AnnouncementSource Source { get; set; }
         }
 
         private Queue<QueuedAnnouncement> announcementQueue = new Queue<QueuedAnnouncement>();
@@ -127,7 +139,7 @@ namespace AccessibilityMod.Audio
             }
         }
 
-        public void QueueAnnouncement(string text, bool interrupt = false)
+        public void QueueAnnouncement(string text, bool interrupt = false, AnnouncementSource source = AnnouncementSource.Other)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -148,7 +160,8 @@ namespace AccessibilityMod.Audio
                 Text = text,
                 Interrupt = interrupt,
                 QueueTime = Time.time,
-                HasWaitedForAudio = false
+                HasWaitedForAudio = false,
+                Source = source
             };
 
             announcementQueue.Enqueue(announcement);
@@ -189,6 +202,36 @@ namespace AccessibilityMod.Audio
         public void ClearQueue()
         {
             announcementQueue.Clear();
+        }
+
+        /// <summary>
+        /// Clear only UI announcements (dialogue options, continue buttons)
+        /// Keeps important notifications like skill checks and task completions
+        /// </summary>
+        public void ClearUIAnnouncements()
+        {
+            var itemsToKeep = new List<QueuedAnnouncement>();
+
+            // Keep all non-UI announcements
+            foreach (var item in announcementQueue)
+            {
+                if (item.Source != AnnouncementSource.UI)
+                {
+                    itemsToKeep.Add(item);
+                }
+            }
+
+            int removedCount = announcementQueue.Count - itemsToKeep.Count;
+            announcementQueue.Clear();
+            foreach (var item in itemsToKeep)
+            {
+                announcementQueue.Enqueue(item);
+            }
+
+            if (removedCount > 0)
+            {
+                MelonLogger.Msg($"[AudioAware] Cleared {removedCount} UI announcement(s), kept {itemsToKeep.Count} important announcement(s)");
+            }
         }
 
         /// <summary>

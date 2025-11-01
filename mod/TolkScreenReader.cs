@@ -105,7 +105,7 @@ namespace AccessibilityMod
             return text;
         }
 
-        public bool Speak(string text, bool interrupt = false, AnnouncementCategory category = AnnouncementCategory.Immediate)
+        public bool Speak(string text, bool interrupt = false, AnnouncementCategory category = AnnouncementCategory.Immediate, Audio.AnnouncementSource source = Audio.AnnouncementSource.Other)
         {
             if (!isInitialized || string.IsNullOrEmpty(text) || suppressAnnouncements) return false;
             text = StripHtmlTags(text);
@@ -114,7 +114,7 @@ namespace AccessibilityMod
             if (category == AnnouncementCategory.Queueable)
             {
                 // Queue the announcement to be spoken when voice audio is not playing
-                AudioAwareAnnouncementManager.Instance.QueueAnnouncement(text, interrupt);
+                AudioAwareAnnouncementManager.Instance.QueueAnnouncement(text, interrupt, source);
                 return true;
             }
             else
