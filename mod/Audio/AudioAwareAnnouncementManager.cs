@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using MelonLoader;
 using UnityEngine;
-using System.Collections.Generic;
 
 namespace AccessibilityMod.Audio
 {
@@ -9,10 +9,10 @@ namespace AccessibilityMod.Audio
     /// </summary>
     public enum AnnouncementSource
     {
-        UI,              // UI navigation, dialogue options, continue buttons
-        Dialogue,        // Dialogue text and speakers
-        Notification,    // Game notifications, skill checks, task completions
-        Other            // Everything else
+        UI, // UI navigation, dialogue options, continue buttons
+        Dialogue, // Dialogue text and speakers
+        Notification, // Game notifications, skill checks, task completions
+        Other, // Everything else
     }
 
     public class AudioAwareAnnouncementManager
@@ -43,7 +43,7 @@ namespace AccessibilityMod.Audio
         private float lastAudioStopTime = 0f;
         private bool wasPlayingLastFrame = false;
         private const float DELAY_AFTER_AUDIO_STOPS = 0.4f; // 400ms delay after audio stops
-        private const float AUDIO_START_DELAY = 0.25f; // 250ms delay to let game start audio
+        private const float AUDIO_START_DELAY = 0.5f; // 500ms delay to let game start audio
 
         public void Update()
         {
@@ -139,7 +139,11 @@ namespace AccessibilityMod.Audio
             }
         }
 
-        public void QueueAnnouncement(string text, bool interrupt = false, AnnouncementSource source = AnnouncementSource.Other)
+        public void QueueAnnouncement(
+            string text,
+            bool interrupt = false,
+            AnnouncementSource source = AnnouncementSource.Other
+        )
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -161,7 +165,7 @@ namespace AccessibilityMod.Audio
                 Interrupt = interrupt,
                 QueueTime = Time.time,
                 HasWaitedForAudio = false,
-                Source = source
+                Source = source,
             };
 
             announcementQueue.Enqueue(announcement);
@@ -230,7 +234,9 @@ namespace AccessibilityMod.Audio
 
             if (removedCount > 0)
             {
-                MelonLogger.Msg($"[AudioAware] Cleared {removedCount} UI announcement(s), kept {itemsToKeep.Count} important announcement(s)");
+                MelonLogger.Msg(
+                    $"[AudioAware] Cleared {removedCount} UI announcement(s), kept {itemsToKeep.Count} important announcement(s)"
+                );
             }
         }
 
