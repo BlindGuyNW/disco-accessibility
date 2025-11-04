@@ -103,6 +103,12 @@ namespace AccessibilityMod.Input
                 TolkScreenReader.Instance.ToggleGlobalInterrupt();
             }
 
+            // Read skill description in character sheet: N key
+            if (UnityEngine.Input.GetKeyDown(KeyCode.N))
+            {
+                SkillDescriptionReader.ReadSelectedSkillDescription();
+            }
+
             // Handle Thought Cabinet specific input
             ThoughtCabinetNavigationHandler.HandleThoughtCabinetInput();
         }

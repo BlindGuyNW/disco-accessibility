@@ -1,20 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using UnityEngine.UI;
-using Il2CppTMPro;
+using AccessibilityMod.Utils;
 using Il2Cpp;
+using Il2CppCollageMode.Scripts.Localization;
+using Il2CppDiscoPages.Elements.MainMenu;
+using Il2CppFortressOccident;
+using Il2CppI2.Loc;
+using Il2CppPages.Gameplay.Charsheet;
+using Il2CppPages.MainMenu;
 using Il2CppSunshine;
 using Il2CppSunshine.Metric;
-using Il2CppFortressOccident;
-using Il2CppDiscoPages.Elements.MainMenu;
-using Il2CppPages.MainMenu;
-using Il2CppPages.Gameplay.Charsheet;
-using Il2CppI2.Loc;
-using Il2CppCollageMode.Scripts.Localization;
-using AccessibilityMod.Utils;
+using Il2CppTMPro;
 using MelonLoader;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace AccessibilityMod.UI
 {
@@ -30,7 +30,8 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                if (uiObject == null) return null;
+                if (uiObject == null)
+                    return null;
 
                 // First check if this is a StatPanel with tooltip support
                 // BUT ONLY IN GAMEPLAY - not during character creation!
@@ -43,7 +44,8 @@ namespace AccessibilityMod.UI
                         var modifiable = statPanel.GetModifiable();
                         if (modifiable != null)
                         {
-                            string tooltipData = Il2Cpp.CharacterSheetInfoPanel.GatherModifiableData(modifiable);
+                            string tooltipData =
+                                Il2Cpp.CharacterSheetInfoPanel.GatherModifiableData(modifiable);
                             if (!string.IsNullOrEmpty(tooltipData))
                             {
                                 // Add the total value at the end for convenience
@@ -77,10 +79,16 @@ namespace AccessibilityMod.UI
                         string attributeName = uiObject.name;
                         string speechText = TextExtractor.ExtractBestTextContent(uiObject);
 
-                        if (!string.IsNullOrEmpty(speechText) && !string.IsNullOrEmpty(attributeName))
+                        if (
+                            !string.IsNullOrEmpty(speechText)
+                            && !string.IsNullOrEmpty(attributeName)
+                        )
                         {
                             // Try to get displayed stat description first
-                            string displayedDescription = FindDisplayedStatDescription(uiObject, attributeName);
+                            string displayedDescription = FindDisplayedStatDescription(
+                                uiObject,
+                                attributeName
+                            );
                             if (!string.IsNullOrEmpty(displayedDescription))
                             {
                                 if (speechText.Length <= 2) // Likely a number value
@@ -126,7 +134,8 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                if (uiObject == null) return null;
+                if (uiObject == null)
+                    return null;
 
                 // Check if this object is part of a SkillPortraitPanel
                 var skillPanel = uiObject.GetComponentInParent<Il2Cpp.SkillPortraitPanel>();
@@ -136,7 +145,10 @@ namespace AccessibilityMod.UI
                     var skillType = skillPanel.skill;
 
                     // Get the localized skill name
-                    string skillName = Il2CppSunshine.Metric.Skill.SkillTypeToLocalizedName(skillType, true);
+                    string skillName = Il2CppSunshine.Metric.Skill.SkillTypeToLocalizedName(
+                        skillType,
+                        true
+                    );
 
                     // Check if we're in gameplay (not character creation)
                     // In gameplay, we want rich tooltip information
@@ -148,12 +160,25 @@ namespace AccessibilityMod.UI
                             var modifiable = skillPanel.GetModifiable();
                             if (modifiable != null)
                             {
-                                string tooltipData = Il2Cpp.CharacterSheetInfoPanel.GatherModifiableData(modifiable);
+                                string tooltipData =
+                                    Il2Cpp.CharacterSheetInfoPanel.GatherModifiableData(modifiable);
                                 if (!string.IsNullOrEmpty(tooltipData))
                                 {
                                     // Add the total value at the end for convenience
                                     int totalValue = modifiable.value;
-                                    return $"{skillName}: {tooltipData}\nTotal: {totalValue}";
+                                    var formattedSkillData =
+                                        $"{skillName}: {tooltipData}\nTotal: {totalValue}";
+
+                                    return formattedSkillData
+                                        .Split("\n")
+                                        .Aggregate(
+                                            "",
+                                            (current, line) =>
+                                                current
+                                                + (line.TrimEnd().EndsWith(".") ? line : line + ".")
+                                                + "\n"
+                                        )
+                                        .Trim();
                                 }
                             }
                         }
@@ -182,7 +207,10 @@ namespace AccessibilityMod.UI
                     else
                     {
                         // Character creation - provide descriptions
-                        string description = FindDisplayedSkillDescription(skillPanel.gameObject, skillName);
+                        string description = FindDisplayedSkillDescription(
+                            skillPanel.gameObject,
+                            skillName
+                        );
                         if (!string.IsNullOrEmpty(description))
                         {
                             return description;
@@ -196,8 +224,7 @@ namespace AccessibilityMod.UI
                 // Fallback: Check for skill components without SkillPortraitPanel
                 // This handles other skill UI elements that might not have the panel
                 var parent = uiObject.transform.parent;
-                if (parent != null && parent.parent != null &&
-                    parent.parent.name == "Skills")
+                if (parent != null && parent.parent != null && parent.parent.name == "Skills")
                 {
                     string skillName = parent.name;
 
@@ -245,7 +272,8 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                if (uiObject == null) return null;
+                if (uiObject == null)
+                    return null;
 
                 // Check for ArchetypeSelectMenuButton component first
                 var archetypeButton = uiObject.GetComponent<ArchetypeSelectMenuButton>();
@@ -259,12 +287,15 @@ namespace AccessibilityMod.UI
                 if (!string.IsNullOrEmpty(basicText) && IsArchetypeRelatedText(basicText, uiObject))
                 {
                     // Try to find displayed archetype description
-                    string displayedDescription = FindDisplayedArchetypeDescription(uiObject, basicText);
+                    string displayedDescription = FindDisplayedArchetypeDescription(
+                        uiObject,
+                        basicText
+                    );
                     if (!string.IsNullOrEmpty(displayedDescription))
                     {
                         return displayedDescription;
                     }
-                    
+
                     // Fallback: provide context based on common archetype names
                     return GetArchetypeContextFromText(basicText);
                 }
@@ -289,20 +320,28 @@ namespace AccessibilityMod.UI
             {
                 // Check object name first
                 string objectName = uiObject.name.ToLower();
-                if (objectName.Contains("intellect")) return "Intellect";
-                if (objectName.Contains("psyche")) return "Psyche";
-                if (objectName.Contains("physique")) return "Physique";
-                if (objectName.Contains("motorics")) return "Motorics";
+                if (objectName.Contains("intellect"))
+                    return "Intellect";
+                if (objectName.Contains("psyche"))
+                    return "Psyche";
+                if (objectName.Contains("physique"))
+                    return "Physique";
+                if (objectName.Contains("motorics"))
+                    return "Motorics";
 
                 // Check parent hierarchy
                 Transform current = uiObject.transform;
                 while (current != null)
                 {
                     string name = current.name.ToLower();
-                    if (name.Contains("intellect")) return "Intellect";
-                    if (name.Contains("psyche")) return "Psyche";
-                    if (name.Contains("physique")) return "Physique";
-                    if (name.Contains("motorics")) return "Motorics";
+                    if (name.Contains("intellect"))
+                        return "Intellect";
+                    if (name.Contains("psyche"))
+                        return "Psyche";
+                    if (name.Contains("physique"))
+                        return "Physique";
+                    if (name.Contains("motorics"))
+                        return "Motorics";
                     current = current.parent;
                 }
 
@@ -354,9 +393,9 @@ namespace AccessibilityMod.UI
             try
             {
                 return TextExtractor.FindDisplayedDescription(
-                    statObject, 
-                    text => TextExtractor.IsLikelyStatDescriptionText(text, statName), 
-                    4, 
+                    statObject,
+                    text => TextExtractor.IsLikelyStatDescriptionText(text, statName),
+                    4,
                     $"stat {statName}"
                 );
             }
@@ -378,7 +417,7 @@ namespace AccessibilityMod.UI
                 "psyche" => " - affects empathy, composure, and social interaction skills",
                 "physique" => " - affects physical strength, endurance, and combat abilities",
                 "motorics" => " - affects dexterity, coordination, and perception skills",
-                _ => ""
+                _ => "",
             };
         }
 
@@ -389,15 +428,16 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                if (skillParent == null) return null;
-                
+                if (skillParent == null)
+                    return null;
+
                 // Try to find displayed skill description first
                 string displayedDescription = FindDisplayedSkillDescription(skillParent, skillName);
                 if (!string.IsNullOrEmpty(displayedDescription))
                 {
                     return displayedDescription;
                 }
-                
+
                 // Fallback to hardcoded descriptions
                 return GetHardcodedSkillDescription(skillName);
             }
@@ -411,7 +451,10 @@ namespace AccessibilityMod.UI
         /// <summary>
         /// Find displayed skill description from UI
         /// </summary>
-        private static string FindDisplayedSkillDescription(GameObject skillParent, string skillName)
+        private static string FindDisplayedSkillDescription(
+            GameObject skillParent,
+            string skillName
+        )
         {
             try
             {
@@ -496,7 +539,7 @@ namespace AccessibilityMod.UI
                     "SAVOIR_FAIRE" => SkillType.SAVOIR_FAIRE,
                     "INTERFACING" => SkillType.INTERFACING,
                     "COMPOSURE" => SkillType.COMPOSURE,
-                    _ => SkillType.LOGIC
+                    _ => SkillType.LOGIC,
                 };
                 return skillType != SkillType.LOGIC || skillName.ToUpper() == "LOGIC";
             }
@@ -516,38 +559,63 @@ namespace AccessibilityMod.UI
             return skillName.ToUpper() switch
             {
                 // Intellect Skills
-                "LOGIC" => "Logic Skill: Deductive reasoning and problem-solving. Helps with evidence analysis and logical conclusions",
-                "ENCYCLOPEDIA" => "Encyclopedia Skill: General knowledge and trivia. Provides background information on various topics",
-                "RHETORIC" => "Rhetoric Skill: Persuasion and argumentation. Useful for convincing others and debating",
-                "DRAMA" => "Drama Skill: Acting and deception. Helps with lying and theatrical performance",
-                "CONCEPTUALIZATION" => "Conceptualization Skill: Abstract thinking and creativity. Aids in artistic and philosophical insights",
-                "VISUAL_CALCULUS" => "Visual Calculus Skill: Spatial reasoning and trajectory analysis. Useful for physics and geometry",
+                "LOGIC" =>
+                    "Logic Skill: Deductive reasoning and problem-solving. Helps with evidence analysis and logical conclusions",
+                "ENCYCLOPEDIA" =>
+                    "Encyclopedia Skill: General knowledge and trivia. Provides background information on various topics",
+                "RHETORIC" =>
+                    "Rhetoric Skill: Persuasion and argumentation. Useful for convincing others and debating",
+                "DRAMA" =>
+                    "Drama Skill: Acting and deception. Helps with lying and theatrical performance",
+                "CONCEPTUALIZATION" =>
+                    "Conceptualization Skill: Abstract thinking and creativity. Aids in artistic and philosophical insights",
+                "VISUAL_CALCULUS" =>
+                    "Visual Calculus Skill: Spatial reasoning and trajectory analysis. Useful for physics and geometry",
 
                 // Psyche Skills
-                "VOLITION" => "Volition Skill: Willpower and self-control. Resists mental influence and maintains composure",
-                "INLAND_EMPIRE" => "Inland Empire Skill: Intuition and surreal thinking. Provides mystical and abstract insights",
-                "EMPATHY" => "Empathy Skill: Understanding others' emotions. Helps read people and social situations",
-                "AUTHORITY" => "Authority Skill: Leadership and intimidation. Commands respect and dominates conversations",
-                "SUGGESTION" => "Suggestion Skill: Subtle influence and manipulation. Guides conversations indirectly",
-                "ESPRIT_DE_CORPS" => "Esprit de Corps Skill: Police solidarity and institutional knowledge. Connects with law enforcement",
+                "VOLITION" =>
+                    "Volition Skill: Willpower and self-control. Resists mental influence and maintains composure",
+                "INLAND_EMPIRE" =>
+                    "Inland Empire Skill: Intuition and surreal thinking. Provides mystical and abstract insights",
+                "EMPATHY" =>
+                    "Empathy Skill: Understanding others' emotions. Helps read people and social situations",
+                "AUTHORITY" =>
+                    "Authority Skill: Leadership and intimidation. Commands respect and dominates conversations",
+                "SUGGESTION" =>
+                    "Suggestion Skill: Subtle influence and manipulation. Guides conversations indirectly",
+                "ESPRIT_DE_CORPS" =>
+                    "Esprit de Corps Skill: Police solidarity and institutional knowledge. Connects with law enforcement",
 
                 // Physique Skills
-                "PHYSICAL_INSTRUMENT" => "Physical Instrument Skill: Raw strength and intimidation. Useful for violence and physical threats",
-                "ELECTROCHEMISTRY" => "Electrochemistry Skill: Drug knowledge and chemical effects. Understands substances and addiction",
-                "ENDURANCE" => "Endurance Skill: Physical resilience and health. Withstands damage and fatigue",
-                "HALF_LIGHT" => "Half Light Skill: Violence and aggression. Thrives in dangerous and confrontational situations",
-                "PAIN_THRESHOLD" => "Pain Threshold Skill: Tolerance to injury. Ignores pain and physical discomfort",
-                "SHIVERS" => "Shivers Skill: Environmental awareness. Senses the city's mood and atmosphere",
+                "PHYSICAL_INSTRUMENT" =>
+                    "Physical Instrument Skill: Raw strength and intimidation. Useful for violence and physical threats",
+                "ELECTROCHEMISTRY" =>
+                    "Electrochemistry Skill: Drug knowledge and chemical effects. Understands substances and addiction",
+                "ENDURANCE" =>
+                    "Endurance Skill: Physical resilience and health. Withstands damage and fatigue",
+                "HALF_LIGHT" =>
+                    "Half Light Skill: Violence and aggression. Thrives in dangerous and confrontational situations",
+                "PAIN_THRESHOLD" =>
+                    "Pain Threshold Skill: Tolerance to injury. Ignores pain and physical discomfort",
+                "SHIVERS" =>
+                    "Shivers Skill: Environmental awareness. Senses the city's mood and atmosphere",
 
                 // Motorics Skills
-                "HAND_EYE_COORDINATION" => "Hand/Eye Coordination Skill: Fine motor skills and precision. Useful for delicate tasks",
-                "PERCEPTION" => "Perception Skill: Noticing details and hidden things. Spots clues and environmental features",
-                "REACTION_SPEED" => "Reaction Speed Skill: Quick reflexes and timing. Helps in fast-paced situations",
-                "SAVOIR_FAIRE" => "Savoir Faire Skill: Style and panache. Performs actions with flair and sophistication",
-                "INTERFACING" => "Interfacing Skill: Technology and electronics. Operates computers and technical equipment",
-                "COMPOSURE" => "Composure Skill: Staying calm under pressure. Maintains dignity in stressful situations",
+                "HAND_EYE_COORDINATION" =>
+                    "Hand/Eye Coordination Skill: Fine motor skills and precision. Useful for delicate tasks",
+                "PERCEPTION" =>
+                    "Perception Skill: Noticing details and hidden things. Spots clues and environmental features",
+                "REACTION_SPEED" =>
+                    "Reaction Speed Skill: Quick reflexes and timing. Helps in fast-paced situations",
+                "SAVOIR_FAIRE" =>
+                    "Savoir Faire Skill: Style and panache. Performs actions with flair and sophistication",
+                "INTERFACING" =>
+                    "Interfacing Skill: Technology and electronics. Operates computers and technical equipment",
+                "COMPOSURE" =>
+                    "Composure Skill: Staying calm under pressure. Maintains dignity in stressful situations",
 
-                _ => $"{skillName.Replace('_', ' ')} Skill: Select to view details and allocate points"
+                _ =>
+                    $"{skillName.Replace('_', ' ')} Skill: Select to view details and allocate points",
             };
         }
 
@@ -558,23 +626,30 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                if (uiObject == null) return null;
+                if (uiObject == null)
+                    return null;
 
                 var button = uiObject.GetComponent<Button>();
-                if (button == null) return null;
+                if (button == null)
+                    return null;
 
                 string buttonText = TextExtractor.ExtractBestTextContent(uiObject);
-                
+
                 // Look for + or - buttons that are part of skill allocation
-                if (string.IsNullOrEmpty(buttonText) || (!buttonText.Contains("+") && !buttonText.Contains("-")))
+                if (
+                    string.IsNullOrEmpty(buttonText)
+                    || (!buttonText.Contains("+") && !buttonText.Contains("-"))
+                )
                     return null;
 
                 // Check if we're in a skill context by looking at parent hierarchy
                 var parent = uiObject.transform.parent;
                 while (parent != null)
                 {
-                    if (parent.name.Contains("SKILL") || 
-                        (parent.parent != null && parent.parent.name == "Skills"))
+                    if (
+                        parent.name.Contains("SKILL")
+                        || (parent.parent != null && parent.parent.name == "Skills")
+                    )
                     {
                         string skillName = GetSkillNameFromHierarchy(parent.gameObject);
                         if (!string.IsNullOrEmpty(skillName))
@@ -623,14 +698,32 @@ namespace AccessibilityMod.UI
                 while (current != null)
                 {
                     string name = current.name;
-                    if (name.Contains("LOGIC") || name.Contains("ENCYCLOPEDIA") || name.Contains("RHETORIC") ||
-                        name.Contains("DRAMA") || name.Contains("CONCEPTUALIZATION") || name.Contains("VISUAL_CALCULUS") ||
-                        name.Contains("VOLITION") || name.Contains("INLAND_EMPIRE") || name.Contains("EMPATHY") ||
-                        name.Contains("AUTHORITY") || name.Contains("SUGGESTION") || name.Contains("ESPRIT_DE_CORPS") ||
-                        name.Contains("PHYSICAL_INSTRUMENT") || name.Contains("ELECTROCHEMISTRY") || name.Contains("ENDURANCE") ||
-                        name.Contains("HALF_LIGHT") || name.Contains("PAIN_THRESHOLD") || name.Contains("SHIVERS") ||
-                        name.Contains("HE_COORDINATION") || name.Contains("PERCEPTION") || name.Contains("REACTION") ||
-                        name.Contains("SAVOIR_FAIRE") || name.Contains("INTERFACING") || name.Contains("COMPOSURE"))
+                    if (
+                        name.Contains("LOGIC")
+                        || name.Contains("ENCYCLOPEDIA")
+                        || name.Contains("RHETORIC")
+                        || name.Contains("DRAMA")
+                        || name.Contains("CONCEPTUALIZATION")
+                        || name.Contains("VISUAL_CALCULUS")
+                        || name.Contains("VOLITION")
+                        || name.Contains("INLAND_EMPIRE")
+                        || name.Contains("EMPATHY")
+                        || name.Contains("AUTHORITY")
+                        || name.Contains("SUGGESTION")
+                        || name.Contains("ESPRIT_DE_CORPS")
+                        || name.Contains("PHYSICAL_INSTRUMENT")
+                        || name.Contains("ELECTROCHEMISTRY")
+                        || name.Contains("ENDURANCE")
+                        || name.Contains("HALF_LIGHT")
+                        || name.Contains("PAIN_THRESHOLD")
+                        || name.Contains("SHIVERS")
+                        || name.Contains("HE_COORDINATION")
+                        || name.Contains("PERCEPTION")
+                        || name.Contains("REACTION")
+                        || name.Contains("SAVOIR_FAIRE")
+                        || name.Contains("INTERFACING")
+                        || name.Contains("COMPOSURE")
+                    )
                     {
                         return name;
                     }
@@ -656,10 +749,14 @@ namespace AccessibilityMod.UI
                 if (parent != null)
                 {
                     string parentName = parent.name.ToLower();
-                    if (parentName.Contains("intellect")) return "Intellect";
-                    if (parentName.Contains("psyche")) return "Psyche";
-                    if (parentName.Contains("physique")) return "Physique";
-                    if (parentName.Contains("motorics")) return "Motorics";
+                    if (parentName.Contains("intellect"))
+                        return "Intellect";
+                    if (parentName.Contains("psyche"))
+                        return "Psyche";
+                    if (parentName.Contains("physique"))
+                        return "Physique";
+                    if (parentName.Contains("motorics"))
+                        return "Motorics";
                 }
 
                 // Check siblings for attribute names
@@ -670,10 +767,14 @@ namespace AccessibilityMod.UI
                         if (sibling.gameObject != buttonObject)
                         {
                             string name = sibling.name.ToLower();
-                            if (name.Contains("intellect")) return "Intellect";
-                            if (name.Contains("psyche")) return "Psyche";
-                            if (name.Contains("physique")) return "Physique";
-                            if (name.Contains("motorics")) return "Motorics";
+                            if (name.Contains("intellect"))
+                                return "Intellect";
+                            if (name.Contains("psyche"))
+                                return "Psyche";
+                            if (name.Contains("physique"))
+                                return "Physique";
+                            if (name.Contains("motorics"))
+                                return "Motorics";
                         }
                     }
                 }
@@ -690,14 +791,17 @@ namespace AccessibilityMod.UI
         /// <summary>
         /// Find displayed archetype description
         /// </summary>
-        private static string FindDisplayedArchetypeDescription(GameObject archetypeObject, string archetypeName)
+        private static string FindDisplayedArchetypeDescription(
+            GameObject archetypeObject,
+            string archetypeName
+        )
         {
             try
             {
                 string description = TextExtractor.FindDisplayedDescription(
-                    archetypeObject, 
-                    text => TextExtractor.IsLikelyArchetypeDescriptionText(text, archetypeName), 
-                    4, 
+                    archetypeObject,
+                    text => TextExtractor.IsLikelyArchetypeDescriptionText(text, archetypeName),
+                    4,
                     $"archetype {archetypeName}"
                 );
 
@@ -718,11 +822,14 @@ namespace AccessibilityMod.UI
         /// <summary>
         /// Format archetype button with full information
         /// </summary>
-        private static string FormatArchetypeButtonForSpeech(ArchetypeSelectMenuButton archetypeButton)
+        private static string FormatArchetypeButtonForSpeech(
+            ArchetypeSelectMenuButton archetypeButton
+        )
         {
             try
             {
-                if (archetypeButton == null) return null;
+                if (archetypeButton == null)
+                    return null;
 
                 // Handle custom character button
                 if (archetypeButton.isCustomCharacterButton)
@@ -732,18 +839,20 @@ namespace AccessibilityMod.UI
 
                 // Get archetype data
                 var archetype = archetypeButton.Archetype;
-                if (archetype == null) return null;
+                if (archetype == null)
+                    return null;
 
                 string archetypeName = "";
                 string description = "";
                 string signatureSkill = "";
 
                 // Try to get localized archetype name
-                try 
+                try
                 {
                     if (archetypeButton.nameLocalization != null)
                     {
-                        var nameText = archetypeButton.nameLocalization.GetComponent<TextMeshProUGUI>();
+                        var nameText =
+                            archetypeButton.nameLocalization.GetComponent<TextMeshProUGUI>();
                         if (nameText != null && !string.IsNullOrEmpty(nameText.text))
                         {
                             archetypeName = nameText.text.Trim();
@@ -760,7 +869,8 @@ namespace AccessibilityMod.UI
                 {
                     if (archetypeButton.descriptionLocalization != null)
                     {
-                        var descText = archetypeButton.descriptionLocalization.GetComponent<TextMeshProUGUI>();
+                        var descText =
+                            archetypeButton.descriptionLocalization.GetComponent<TextMeshProUGUI>();
                         if (descText != null && !string.IsNullOrEmpty(descText.text))
                         {
                             description = descText.text.Trim();
@@ -777,7 +887,8 @@ namespace AccessibilityMod.UI
                 {
                     if (archetypeButton.signatureSkillLocalization != null)
                     {
-                        var skillText = archetypeButton.signatureSkillLocalization.GetComponent<TextMeshProUGUI>();
+                        var skillText =
+                            archetypeButton.signatureSkillLocalization.GetComponent<TextMeshProUGUI>();
                         if (skillText != null && !string.IsNullOrEmpty(skillText.text))
                         {
                             signatureSkill = skillText.text.Trim();
@@ -786,12 +897,14 @@ namespace AccessibilityMod.UI
                 }
                 catch (Exception ex)
                 {
-                    MelonLogger.Warning($"Could not access signatureSkillLocalization: {ex.Message}");
+                    MelonLogger.Warning(
+                        $"Could not access signatureSkillLocalization: {ex.Message}"
+                    );
                 }
 
                 // Build comprehensive archetype information
                 string result = "";
-                
+
                 if (!string.IsNullOrEmpty(archetypeName))
                 {
                     result = $"{archetypeName} Archetype";
@@ -810,7 +923,8 @@ namespace AccessibilityMod.UI
                 // Add attribute information from archetype template
                 if (archetype != null)
                 {
-                    result += $". Attributes - Intellect: {archetype.Intellect}, Psyche: {archetype.Psyche}, Physique: {archetype.Fysique}, Motorics: {archetype.Motorics}";
+                    result +=
+                        $". Attributes - Intellect: {archetype.Intellect}, Psyche: {archetype.Psyche}, Physique: {archetype.Fysique}, Motorics: {archetype.Motorics}";
                 }
 
                 // Add signature skill if available
@@ -833,10 +947,18 @@ namespace AccessibilityMod.UI
         /// </summary>
         private static bool IsArchetypeRelatedText(string text, GameObject uiObject)
         {
-            if (string.IsNullOrEmpty(text)) return false;
-            
+            if (string.IsNullOrEmpty(text))
+                return false;
+
             // Check for known archetype names
-            string[] archetypeNames = { "Thinker", "Sensitive", "Physical", "Custom Character", "Create Your Own" };
+            string[] archetypeNames =
+            {
+                "Thinker",
+                "Sensitive",
+                "Physical",
+                "Custom Character",
+                "Create Your Own",
+            };
             foreach (string archetype in archetypeNames)
             {
                 if (text.IndexOf(archetype, StringComparison.OrdinalIgnoreCase) >= 0)
@@ -844,19 +966,21 @@ namespace AccessibilityMod.UI
                     return true;
                 }
             }
-            
+
             // Check if we're in an archetype selection context by looking at parent hierarchy
             Transform current = uiObject.transform;
             while (current != null)
             {
-                if (current.name.IndexOf("archetype", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    current.name.IndexOf("template", StringComparison.OrdinalIgnoreCase) >= 0)
+                if (
+                    current.name.IndexOf("archetype", StringComparison.OrdinalIgnoreCase) >= 0
+                    || current.name.IndexOf("template", StringComparison.OrdinalIgnoreCase) >= 0
+                )
                 {
                     return true;
                 }
                 current = current.parent;
             }
-            
+
             return false;
         }
 
@@ -867,11 +991,15 @@ namespace AccessibilityMod.UI
         {
             return text.ToLower() switch
             {
-                "thinker" => "Thinker Archetype: Intellectual approach with high logic and reasoning. Focuses on problem-solving and knowledge-based skills",
-                "sensitive" => "Sensitive Archetype: Empathetic approach with high social and emotional intelligence. Excels at understanding people and situations",
-                "physical" => "Physical Archetype: Athletic approach with high strength and endurance. Specializes in physical challenges and direct action",
-                "custom character" or "create your own" => "Custom Character: Create your own archetype with customizable attributes and skills",
-                _ => $"Character Archetype: {text}"
+                "thinker" =>
+                    "Thinker Archetype: Intellectual approach with high logic and reasoning. Focuses on problem-solving and knowledge-based skills",
+                "sensitive" =>
+                    "Sensitive Archetype: Empathetic approach with high social and emotional intelligence. Excels at understanding people and situations",
+                "physical" =>
+                    "Physical Archetype: Athletic approach with high strength and endurance. Specializes in physical challenges and direct action",
+                "custom character" or "create your own" =>
+                    "Custom Character: Create your own archetype with customizable attributes and skills",
+                _ => $"Character Archetype: {text}",
             };
         }
 
