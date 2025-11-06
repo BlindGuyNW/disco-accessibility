@@ -7,7 +7,7 @@ namespace AccessibilityMod.Utils
         public static string GetCardinalDirection(Vector3 from, Vector3 to)
         {
             Vector3 direction = (to - from).normalized;
-            float angle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            float angle = Mathf.Atan2(-direction.x, -direction.z) * Mathf.Rad2Deg;
 
             // Convert to cardinal directions
             if (angle < -157.5f || angle > 157.5f) return "south";
@@ -30,7 +30,7 @@ namespace AccessibilityMod.Utils
         public static float GetAngleToTarget(Vector3 from, Vector3 to)
         {
             Vector3 direction = (to - from).normalized;
-            float angle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            float angle = Mathf.Atan2(-direction.x, -direction.z) * Mathf.Rad2Deg;
 
             // Normalize to 0-360 range (0 = North, clockwise)
             if (angle < 0) angle += 360f;
