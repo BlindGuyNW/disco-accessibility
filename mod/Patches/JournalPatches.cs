@@ -27,20 +27,16 @@ namespace AccessibilityMod.Patches
                 float currentTime = UnityEngine.Time.time;
                 if (lastSelectedTask == __instance && currentTime - lastSelectionTime < 0.5f)
                 {
-                    MelonLogger.Msg($"[Journal] Skipping duplicate selection within 0.5s");
                     return;
                 }
-                
+
                 lastSelectedTask = __instance;
                 lastSelectionTime = currentTime;
-                
-                MelonLogger.Msg($"[Journal] Task selected: {__instance?.task?.Name} at time {currentTime}");
-                
+
                 // Format and announce the task
                 string taskInfo = JournalFormatter.FormatJournalTask(__instance);
                 if (!string.IsNullOrEmpty(taskInfo))
                 {
-                    MelonLogger.Msg($"[Journal] Announcing: {taskInfo}");
                     TolkScreenReader.Instance.Speak(taskInfo, false);
                     
                     // Check for copotype information
@@ -79,7 +75,6 @@ namespace AccessibilityMod.Patches
         {
             try
             {
-                MelonLogger.Msg("[Journal] Journal page opened");
                 TolkScreenReader.Instance.Speak("Journal opened", false);
             }
             catch (Exception ex)
@@ -97,7 +92,6 @@ namespace AccessibilityMod.Patches
         {
             try
             {
-                MelonLogger.Msg("[Journal] Journal page closed");
                 TolkScreenReader.Instance.Speak("Journal closed", false);
             }
             catch (Exception ex)
@@ -122,7 +116,6 @@ namespace AccessibilityMod.Patches
                 lastShowingActive = showingActive;
                 
                 string tabName = showingActive ? "Active tasks" : "Completed tasks";
-                MelonLogger.Msg($"[Journal] Tab switched to: {tabName}");
                 TolkScreenReader.Instance.Speak(tabName, false);
             }
             catch (Exception ex)
@@ -150,7 +143,6 @@ namespace AccessibilityMod.Patches
                 
                 if (!string.IsNullOrEmpty(taskName))
                 {
-                    MelonLogger.Msg($"[Journal] Task completed: {taskName}");
                     TolkScreenReader.Instance.Speak($"Task completed: {taskName}", true);
                 }
             }
@@ -179,7 +171,6 @@ namespace AccessibilityMod.Patches
                 
                 if (!string.IsNullOrEmpty(taskName))
                 {
-                    MelonLogger.Msg($"[Journal] Task canceled: {taskName}");
                     TolkScreenReader.Instance.Speak($"Task canceled: {taskName}", true);
                 }
             }
@@ -208,7 +199,6 @@ namespace AccessibilityMod.Patches
                 
                 if (!string.IsNullOrEmpty(taskName))
                 {
-                    MelonLogger.Msg($"[Journal] New task revealed: {taskName}");
                     TolkScreenReader.Instance.Speak($"New task: {taskName}", true);
                 }
             }

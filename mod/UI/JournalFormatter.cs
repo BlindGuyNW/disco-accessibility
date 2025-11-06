@@ -40,13 +40,16 @@ namespace AccessibilityMod.UI
                     return "Unknown task";
                 }
                 
+                // Try to cast to JournalTask (for Il2Cpp compatibility)
+                var journalTask = task.TryCast<JournalTask>();
+
                 // Get task name
                 string taskName = task.LocalizedName;
                 if (string.IsNullOrEmpty(taskName))
                 {
                     taskName = task.Name;
                 }
-                
+
                 if (string.IsNullOrEmpty(taskName))
                 {
                     taskName = "Unknown task";
@@ -55,7 +58,7 @@ namespace AccessibilityMod.UI
                 {
                     taskName = ObjectNameCleaner.CleanObjectName(taskName);
                 }
-                
+
                 // Add status prefix
                 if (task.IsCanceled)
                 {
@@ -65,11 +68,11 @@ namespace AccessibilityMod.UI
                 {
                     sb.Append("Completed: ");
                 }
-                else if (task is JournalTask journalTaskForNew && journalTaskForNew.IsNew)
+                else if (journalTask != null && journalTask.IsNew)
                 {
                     sb.Append("New: ");
                 }
-                
+
                 sb.Append(taskName);
                 
                 // Add time information if available
@@ -88,42 +91,50 @@ namespace AccessibilityMod.UI
                         // Ignore time formatting errors
                     }
                 }
-                
-                // Add subtask information if this is a JournalTask with subtasks
-                if (task is JournalTask journalTask)
+
+                // Add completion time for completed tasks
+                if (task.IsDone && !task.IsCanceled)
                 {
-                    MelonLogger.Msg($"[Journal] Task is JournalTask, checking subtasks");
-                    var subtasks = journalTask.GainedSubtasks;
-                    if (subtasks != null)
+                    try
                     {
-                        MelonLogger.Msg($"[Journal] Found {subtasks.Count} subtasks");
-                        if (subtasks.Count > 0)
+                        var finishTime = task.FinishTime;
+                        if (finishTime != null)
                         {
-                            sb.Append($" ({subtasks.Count} subtask");
-                            if (subtasks.Count != 1) sb.Append("s");
-                            
-                            // Count completed subtasks
-                            int completed = 0;
-                            foreach (var subtask in subtasks)
+                            string completionTimeStr = FormatClockTime(finishTime);
+                            if (!string.IsNullOrEmpty(completionTimeStr))
                             {
-                                if (subtask.IsDone) completed++;
+                                sb.Append($", completed {completionTimeStr}");
                             }
-                            
-                            if (completed > 0)
-                            {
-                                sb.Append($", {completed} completed");
-                            }
-                            sb.Append(")");
                         }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        MelonLogger.Msg($"[Journal] GainedSubtasks is null");
+                        MelonLogger.Error($"[Journal] Error getting completion time: {ex.Message}");
                     }
                 }
-                else
+                
+                // Add subtask information if this is a JournalTask with subtasks
+                if (journalTask != null)
                 {
-                    MelonLogger.Msg($"[Journal] Task is not a JournalTask, it's type: {task?.GetType()?.Name}");
+                    var subtasks = journalTask.GainedSubtasks;
+                    if (subtasks != null && subtasks.Count > 0)
+                    {
+                        sb.Append($" ({subtasks.Count} subtask");
+                        if (subtasks.Count != 1) sb.Append("s");
+
+                        // Count completed subtasks
+                        int completed = 0;
+                        foreach (var subtask in subtasks)
+                        {
+                            if (subtask.IsDone) completed++;
+                        }
+
+                        if (completed > 0)
+                        {
+                            sb.Append($", {completed} completed");
+                        }
+                        sb.Append(")");
+                    }
                 }
                 
                 // Add description
@@ -132,17 +143,68 @@ namespace AccessibilityMod.UI
                 {
                     description = task.Description;
                 }
-                
+
                 if (!string.IsNullOrEmpty(description))
                 {
                     sb.Append(". Description: ");
-                    sb.Append(ObjectNameCleaner.CleanObjectName(description));
+                    // Don't clean description text - it's user-facing narrative, not object names
+                    sb.Append(description);
                 }
-                else
+
+                // Add active subtasks for JournalTask (after description)
+                // Reuse the journalTask variable we already cast above
+                if (journalTask != null)
                 {
-                    MelonLogger.Msg($"[Journal] No description found for task {taskName}");
+                    try
+                    {
+                        var subtasks = journalTask.GainedSubtasks;
+                        if (subtasks != null && subtasks.Count > 0)
+                        {
+                            // Find active (not done, visible) subtasks
+                            var activeSubtasks = new System.Collections.Generic.List<JournalSubtask>();
+
+                            for (int i = 0; i < subtasks.Count; i++)
+                            {
+                                var subtask = subtasks[i];
+                                if (subtask != null && !subtask.IsDone && subtask.IsVisible)
+                                {
+                                    activeSubtasks.Add(subtask);
+                                }
+                            }
+
+                            // Announce active subtasks
+                            if (activeSubtasks.Count > 0)
+                            {
+                                foreach (var activeSubtask in activeSubtasks)
+                                {
+                                    string subtaskName = activeSubtask.LocalizedName;
+                                    if (string.IsNullOrEmpty(subtaskName))
+                                    {
+                                        subtaskName = activeSubtask.Name;
+                                    }
+
+                                    if (!string.IsNullOrEmpty(subtaskName))
+                                    {
+                                        sb.Append(" Active subtask: ");
+                                        // Don't clean subtask names - they're user-facing narrative text
+                                        sb.Append(subtaskName);
+                                        // Only add period if subtask doesn't already end with punctuation
+                                        char lastChar = subtaskName[subtaskName.Length - 1];
+                                        if (lastChar != '.' && lastChar != '!' && lastChar != '?')
+                                        {
+                                            sb.Append(".");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MelonLogger.Error($"[Journal] Error processing active subtasks: {ex}");
+                    }
                 }
-                
+
                 return sb.ToString();
             }
             catch (Exception ex)
@@ -182,10 +244,11 @@ namespace AccessibilityMod.UI
                 {
                     name = subtask.Name;
                 }
-                
+
                 if (!string.IsNullOrEmpty(name))
                 {
-                    sb.Append(ObjectNameCleaner.CleanObjectName(name));
+                    // Don't clean subtask names - they're user-facing narrative text
+                    sb.Append(name);
                 }
                 else
                 {

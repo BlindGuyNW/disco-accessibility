@@ -40,7 +40,6 @@ namespace AccessibilityMod.Patches
                     if (!string.IsNullOrEmpty(checkInfo))
                     {
                         TolkScreenReader.Instance.Speak(checkInfo, true);
-                        MelonLogger.Msg($"[MAP TAB CHECK] {checkInfo}");
                     }
                 }
                 catch (Exception ex)
@@ -69,13 +68,12 @@ namespace AccessibilityMod.Patches
                     if (checkResult == null) return;
 
                     // Build the check information string
-                    string checkInfo = BuildMapCheckInfo(__instance.actorText, checkResult, false, __instance.isReopened, !__instance.isSeen);
+                    string checkInfo = BuildMapCheckInfo(__instance.actorText, checkResult, __instance.IsCheckLocked(), __instance.isReopened, !__instance.isSeen);
 
                     // Announce it
                     if (!string.IsNullOrEmpty(checkInfo))
                     {
                         TolkScreenReader.Instance.Speak(checkInfo, true);
-                        MelonLogger.Msg($"[MAP TAB CHECK] {checkInfo}");
                     }
                 }
                 catch (Exception ex)
@@ -164,14 +162,15 @@ namespace AccessibilityMod.Patches
                 }
 
                 // Determine if this is locked, reopened, or available
+                // Check isReopened first - if a check is reopened, it's available regardless of lock status
                 string status = "";
-                if (isLocked)
-                {
-                    status = "Locked ";
-                }
-                else if (isReopened)
+                if (isReopened)
                 {
                     status = "Reopened ";
+                }
+                else if (isLocked)
+                {
+                    status = "Locked ";
                 }
                 else if (isNew)
                 {
