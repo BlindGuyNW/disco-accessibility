@@ -112,6 +112,27 @@ namespace AccessibilityMod.UI
                         MelonLogger.Error($"[Journal] Error getting completion time: {ex.Message}");
                     }
                 }
+
+                // Add cancellation time for cancelled tasks
+                if (task.IsCanceled)
+                {
+                    try
+                    {
+                        var finishTime = task.FinishTime;
+                        if (finishTime != null)
+                        {
+                            string cancellationTimeStr = FormatClockTime(finishTime);
+                            if (!string.IsNullOrEmpty(cancellationTimeStr))
+                            {
+                                sb.Append($", cancelled {cancellationTimeStr}");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MelonLogger.Error($"[Journal] Error getting cancellation time: {ex.Message}");
+                    }
+                }
                 
                 // Add subtask information if this is a JournalTask with subtasks
                 if (journalTask != null)
