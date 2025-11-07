@@ -18,14 +18,9 @@ namespace AccessibilityMod.UI
         {
             try
             {
-                // Check if character sheet info panel is active
+                // Check if character sheet info panel is active (used in gameplay)
                 var infoPanel = CharacterSheetInfoPanel.Singleton;
-                if (infoPanel == null || !infoPanel.gameObject.activeInHierarchy)
-                {
-                    TolkScreenReader.Instance.Speak("Character sheet is not open", true);
-                    MelonLogger.Msg("[SKILL DESCRIPTION] Character sheet not active");
-                    return;
-                }
+                bool hasInfoPanel = infoPanel != null && infoPanel.gameObject.activeInHierarchy;
 
                 // Get currently selected UI element
                 var eventSystem = EventSystem.current;
@@ -67,83 +62,76 @@ namespace AccessibilityMod.UI
                     MelonLogger.Warning($"[SKILL DESCRIPTION] Could not get skill name: {ex.Message}");
                 }
 
-                // Update the info panel to show the current skill's information
-                try
-                {
-                    // Get the modifiable data for this skill
-                    var modifiable = skillPanel.GetModifiable();
-                    if (modifiable != null)
-                    {
-                        // Tell the info panel to display this skill's data
-                        infoPanel.ShowModifiable(modifiable);
-                        MelonLogger.Msg($"[SKILL DESCRIPTION] Called ShowModifiable for {skillName}");
-                    }
-                    else
-                    {
-                        MelonLogger.Warning($"[SKILL DESCRIPTION] Could not get modifiable for {skillName}");
-                    }
-
-                    // Toggle the info panel on to show the description
-                    infoPanel.ToggleInfo(true);
-                    MelonLogger.Msg($"[SKILL DESCRIPTION] Toggled info panel to Info tab");
-                }
-                catch (Exception ex)
-                {
-                    MelonLogger.Warning($"[SKILL DESCRIPTION] Could not update info panel: {ex.Message}");
-                }
-
-                // Get the description text directly from the InfoText component
                 string longDescription = null;
 
-                // Method 1: Direct access to InfoText GameObject (optimized)
-                try
+                // If we have info panel (gameplay context), use it to get description
+                if (hasInfoPanel)
                 {
-                    // Navigate to InfoText: infoPanel -> find "InfoPanel" child -> "MaskedPanel" -> "InfoText"
-                    Transform infoPanelChild = infoPanel.transform.Find("PortraitMask/Scalable Text/InfoPanel");
-                    if (infoPanelChild != null)
+                    // Update the info panel to show the current skill's information
+                    try
                     {
-                        Transform maskedPanel = infoPanelChild.Find("MaskedPanel");
-                        if (maskedPanel != null)
+                        // Get the modifiable data for this skill
+                        var modifiable = skillPanel.GetModifiable();
+                        if (modifiable != null)
                         {
-                            Transform infoTextObj = maskedPanel.Find("InfoText");
-                            if (infoTextObj != null)
-                            {
-                                var infoTextComponent = infoTextObj.GetComponent<Il2CppTMPro.TextMeshProUGUI>();
-                                if (infoTextComponent != null && !string.IsNullOrEmpty(infoTextComponent.text))
-                                {
-                                    longDescription = infoTextComponent.text.Trim();
-                                    MelonLogger.Msg($"[SKILL DESCRIPTION] Got description directly from InfoText ({longDescription.Length} chars)");
-                                }
-                            }
-                            else
-                            {
-                                MelonLogger.Warning("[SKILL DESCRIPTION] InfoText GameObject not found");
-                            }
+                            // Tell the info panel to display this skill's data
+                            infoPanel.ShowModifiable(modifiable);
+                            MelonLogger.Msg($"[SKILL DESCRIPTION] Called ShowModifiable for {skillName}");
                         }
                         else
                         {
-                            MelonLogger.Warning("[SKILL DESCRIPTION] MaskedPanel GameObject not found");
+                            MelonLogger.Warning($"[SKILL DESCRIPTION] Could not get modifiable for {skillName}");
+                        }
+
+                        // Toggle the info panel on to show the description
+                        infoPanel.ToggleInfo(true);
+                        MelonLogger.Msg($"[SKILL DESCRIPTION] Toggled info panel to Info tab");
+                    }
+                    catch (Exception ex)
+                    {
+                        MelonLogger.Warning($"[SKILL DESCRIPTION] Could not update info panel: {ex.Message}");
+                    }
+
+                    // Method 1: Direct access to InfoText GameObject (optimized for gameplay)
+                    try
+                    {
+                        // Navigate to InfoText: infoPanel -> find "InfoPanel" child -> "MaskedPanel" -> "InfoText"
+                        Transform infoPanelChild = infoPanel.transform.Find("PortraitMask/Scalable Text/InfoPanel");
+                        if (infoPanelChild != null)
+                        {
+                            Transform maskedPanel = infoPanelChild.Find("MaskedPanel");
+                            if (maskedPanel != null)
+                            {
+                                Transform infoTextObj = maskedPanel.Find("InfoText");
+                                if (infoTextObj != null)
+                                {
+                                    var infoTextComponent = infoTextObj.GetComponent<Il2CppTMPro.TextMeshProUGUI>();
+                                    if (infoTextComponent != null && !string.IsNullOrEmpty(infoTextComponent.text))
+                                    {
+                                        longDescription = infoTextComponent.text.Trim();
+                                        MelonLogger.Msg($"[SKILL DESCRIPTION] Got description directly from InfoText ({longDescription.Length} chars)");
+                                    }
+                                }
+                            }
                         }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        MelonLogger.Warning("[SKILL DESCRIPTION] InfoPanel GameObject not found");
+                        MelonLogger.Warning($"[SKILL DESCRIPTION] Error accessing InfoText directly: {ex.Message}");
                     }
                 }
-                catch (Exception ex)
-                {
-                    MelonLogger.Warning($"[SKILL DESCRIPTION] Error accessing InfoText directly: {ex.Message}");
-                }
 
-                // Method 2: Fallback - search through all text components
+                // Method 2: Fallback - try to find description text from skill panel's children (works for both contexts)
                 if (string.IsNullOrEmpty(longDescription))
                 {
-                    MelonLogger.Msg("[SKILL DESCRIPTION] Direct access failed, falling back to search");
+                    MelonLogger.Msg("[SKILL DESCRIPTION] Looking for description in skill panel UI");
 
                     try
                     {
-                        var allTexts = infoPanel.GetComponentsInChildren<Il2CppTMPro.TextMeshProUGUI>(true);
-                        MelonLogger.Msg($"[SKILL DESCRIPTION] Found {allTexts.Length} TextMeshProUGUI components");
+                        // Search for description text in the skill panel or its siblings
+                        var root = skillPanel.transform.root;
+                        var allTexts = root.GetComponentsInChildren<Il2CppTMPro.TextMeshProUGUI>(true);
+                        MelonLogger.Msg($"[SKILL DESCRIPTION] Found {allTexts.Length} TextMeshProUGUI components in scene");
 
                         foreach (var textComponent in allTexts)
                         {
@@ -170,6 +158,7 @@ namespace AccessibilityMod.UI
                                 if (longDescription == null || text.Length > longDescription.Length)
                                 {
                                     longDescription = text;
+                                    MelonLogger.Msg($"[SKILL DESCRIPTION] Found description ({text.Length} chars): {text.Substring(0, Math.Min(50, text.Length))}...");
                                 }
                             }
                         }
@@ -178,6 +167,13 @@ namespace AccessibilityMod.UI
                     {
                         MelonLogger.Warning($"[SKILL DESCRIPTION] Error in fallback search: {ex.Message}");
                     }
+                }
+
+                // Method 3: Final fallback - use hardcoded descriptions
+                if (string.IsNullOrEmpty(longDescription))
+                {
+                    MelonLogger.Msg("[SKILL DESCRIPTION] Using hardcoded description fallback");
+                    longDescription = CharacterCreationFormatter.GetHardcodedSkillDescription(skillPanel.skill.ToString());
                 }
 
 

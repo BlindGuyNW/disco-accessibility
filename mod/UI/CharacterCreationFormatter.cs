@@ -206,18 +206,8 @@ namespace AccessibilityMod.UI
                     }
                     else
                     {
-                        // Character creation - provide descriptions
-                        string description = FindDisplayedSkillDescription(
-                            skillPanel.gameObject,
-                            skillName
-                        );
-                        if (!string.IsNullOrEmpty(description))
-                        {
-                            return description;
-                        }
-
-                        // Fallback to hardcoded descriptions
-                        return GetHardcodedSkillDescription(skillType.ToString());
+                        // Character creation - just announce skill name and prompt to press N
+                        return $"{skillName}. Press N to read full skill description.";
                     }
                 }
 
