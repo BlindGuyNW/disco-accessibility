@@ -103,6 +103,12 @@ namespace AccessibilityMod.Input
                 TolkScreenReader.Instance.ToggleGlobalInterrupt();
             }
 
+            // Officer profile announcement: O key
+            if (UnityEngine.Input.GetKeyDown(KeyCode.O))
+            {
+                Patches.OfficerProfileAnnouncement.AnnounceOfficerProfile();
+            }
+
             // Handle Thought Cabinet specific input
             ThoughtCabinetNavigationHandler.HandleThoughtCabinetInput();
         }
