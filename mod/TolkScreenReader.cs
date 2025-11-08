@@ -2,10 +2,28 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using AccessibilityMod.Settings;
+using AccessibilityMod.Audio;
 using MelonLoader;
 
 namespace AccessibilityMod
 {
+    /// <summary>
+    /// Defines how an announcement should be handled relative to voice audio playback
+    /// </summary>
+    public enum AnnouncementCategory
+    {
+        /// <summary>
+        /// Announcement speaks immediately, regardless of voice audio playback
+        /// Used for navigation, UI selection, and other interactive feedback
+        /// </summary>
+        Immediate,
+
+        /// <summary>
+        /// Announcement is queued during voice audio playback and spoken after audio finishes
+        /// Used for dialogue text, notifications, and other content that can wait
+        /// </summary>
+        Queueable
+    }
     /// <summary>
     /// Wrapper around the Tolk screen reader integration library
     /// </summary>
@@ -87,13 +105,25 @@ namespace AccessibilityMod
             return text;
         }
 
-        public bool Speak(string text, bool interrupt = false)
+        public bool Speak(string text, bool interrupt = false, AnnouncementCategory category = AnnouncementCategory.Immediate, Audio.AnnouncementSource source = Audio.AnnouncementSource.Other)
         {
             if (!isInitialized || string.IsNullOrEmpty(text) || suppressAnnouncements) return false;
             text = StripHtmlTags(text);
-            // Apply global interrupt setting - if enabled, always interrupt
-            bool effectiveInterrupt = interrupt || globalInterruptEnabled;
-            return Tolk.Output(text, effectiveInterrupt);
+
+            // Route based on announcement category
+            if (category == AnnouncementCategory.Queueable)
+            {
+                // Queue the announcement to be spoken when voice audio is not playing
+                AudioAwareAnnouncementManager.Instance.QueueAnnouncement(text, interrupt, source);
+                return true;
+            }
+            else
+            {
+                // Immediate announcement - speak right away
+                // Apply global interrupt setting - if enabled, always interrupt
+                bool effectiveInterrupt = interrupt || globalInterruptEnabled;
+                return Tolk.Output(text, effectiveInterrupt);
+            }
         }
 
         public void ToggleGlobalInterrupt()

@@ -43,7 +43,7 @@ namespace AccessibilityMod.Patches
 
                 if (!string.IsNullOrEmpty(text))
                 {
-                    TolkScreenReader.Instance.Speak($"Orb text: {text.Trim()}", true);
+                    TolkScreenReader.Instance.Speak($"Orb text: {text.Trim()}", true, AnnouncementCategory.Queueable);
                 }
             }
             catch (Exception ex)
@@ -65,7 +65,7 @@ namespace AccessibilityMod.Patches
 
                 if (!string.IsNullOrEmpty(text))
                 {
-                    TolkScreenReader.Instance.Speak($"Orb text: {text.Trim()}", true);
+                    TolkScreenReader.Instance.Speak($"Orb text: {text.Trim()}", true, AnnouncementCategory.Queueable);
                 }
             }
             catch (Exception ex)
@@ -90,11 +90,11 @@ namespace AccessibilityMod.Patches
                     string displayedText = __result.text;
                     if (!string.IsNullOrEmpty(displayedText))
                     {
-                        TolkScreenReader.Instance.Speak($"Orb text: {displayedText.Trim()}", true);
+                        TolkScreenReader.Instance.Speak($"Orb text: {displayedText.Trim()}", true, AnnouncementCategory.Queueable);
                     }
                     else if (!string.IsNullOrEmpty(fallbackText))
                     {
-                        TolkScreenReader.Instance.Speak($"Orb text: {fallbackText.Trim()}", true);
+                        TolkScreenReader.Instance.Speak($"Orb text: {fallbackText.Trim()}", true, AnnouncementCategory.Queueable);
                     }
                 }
             }
@@ -120,11 +120,11 @@ namespace AccessibilityMod.Patches
                     string displayedText = __result.text;
                     if (!string.IsNullOrEmpty(displayedText))
                     {
-                        TolkScreenReader.Instance.Speak($"Orb text: {displayedText.Trim()}", true);
+                        TolkScreenReader.Instance.Speak($"Orb text: {displayedText.Trim()}", true, AnnouncementCategory.Queueable);
                     }
                     else if (!string.IsNullOrEmpty(fallbackText))
                     {
-                        TolkScreenReader.Instance.Speak($"Orb text: {fallbackText.Trim()}", true);
+                        TolkScreenReader.Instance.Speak($"Orb text: {fallbackText.Trim()}", true, AnnouncementCategory.Queueable);
                     }
                 }
             }
@@ -147,7 +147,7 @@ namespace AccessibilityMod.Patches
 
                 if (!string.IsNullOrEmpty(value))
                 {
-                    TolkScreenReader.Instance.Speak($"Float text: {value.Trim()}", true);
+                    TolkScreenReader.Instance.Speak($"Float text: {value.Trim()}", true, AnnouncementCategory.Queueable);
                 }
             }
             catch (Exception ex)

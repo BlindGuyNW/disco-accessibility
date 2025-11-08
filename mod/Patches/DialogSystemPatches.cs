@@ -22,6 +22,17 @@ namespace AccessibilityMod.Patches
         private static string lastAnnouncedSpeaker = "";
         private static float lastSpeakerTime = 0f;
         private static readonly float SPEAKER_COOLDOWN = 1.0f; // 1 second cooldown for same speaker
+
+        // Store the last dialogue line for manual retrieval (even when dialogue reading is disabled)
+        private static string lastDialogueLine = "";
+
+        /// <summary>
+        /// Gets the last dialogue line (speaker and text) for manual reading via hotkey
+        /// </summary>
+        public static string GetLastDialogueLine()
+        {
+            return string.IsNullOrEmpty(lastDialogueLine) ? "No dialogue to repeat" : lastDialogueLine;
+        }
         
         /// <summary>
         /// Patch LogRenderer.AddToLog to capture localized dialog text as it's rendered to the UI
@@ -34,9 +45,6 @@ namespace AccessibilityMod.Patches
                 try
                 {
                     if (entry == null) return;
-                    
-                    // Check if any dialog reading mode is enabled
-                    if (!DialogStateManager.IsDialogReadingEnabled) return;
 
                     // Get localized dialog text and speaker name from FinalEntry
                     string dialogText = entry.spokenLine ?? "";
@@ -48,6 +56,13 @@ namespace AccessibilityMod.Patches
                         MelonLogger.Msg($"[DIALOG] Got FinalEntry but no spokenLine. Speaker: '{speakerName}'");
                         return;
                     }
+
+                    // Always store the last dialogue line for manual retrieval via hotkey
+                    // This works even when dialogue reading is disabled
+                    lastDialogueLine = FormatDialogWithSpeaker(speakerName, dialogText);
+
+                    // Check if any dialog reading mode is enabled for automatic announcement
+                    if (!DialogStateManager.IsDialogReadingEnabled) return;
 
                     // Handle different dialog modes
                     if (DialogStateManager.IsSpeakerOnlyMode)
@@ -68,7 +83,7 @@ namespace AccessibilityMod.Patches
                                 (UnityEngine.Time.time - lastSpeakerTime) > SPEAKER_COOLDOWN)
                             {
                                 string speakerAnnouncement = FormatSpeakerOnly(cleanSpeaker);
-                                TolkScreenReader.Instance.Speak(speakerAnnouncement, false);
+                                TolkScreenReader.Instance.Speak(speakerAnnouncement, false, AnnouncementCategory.Queueable);
 
                                 lastAnnouncedSpeaker = cleanSpeaker;
                                 lastSpeakerTime = UnityEngine.Time.time;
@@ -85,7 +100,7 @@ namespace AccessibilityMod.Patches
                             (UnityEngine.Time.time - lastDialogTime) > DIALOG_COOLDOWN)
                         {
                             // Announce the localized dialog with speaker
-                            TolkScreenReader.Instance.Speak(formattedDialog, false);
+                            TolkScreenReader.Instance.Speak(formattedDialog, false, AnnouncementCategory.Queueable);
 
                             lastSpokenDialog = formattedDialog;
                             lastDialogTime = UnityEngine.Time.time;

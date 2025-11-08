@@ -7,6 +7,7 @@ using AccessibilityMod.Input;
 using AccessibilityMod.UI;
 using AccessibilityMod.Inventory;
 using AccessibilityMod.Settings;
+using AccessibilityMod.Audio;
 
 [assembly: MelonInfo(typeof(AccessibilityMod.AccessibilityMod), "Disco Elysium Accessibility Mod", "1.0.0", "YourName")]
 [assembly: MelonGame("ZAUM Studio", "Disco Elysium")]
@@ -70,6 +71,17 @@ namespace AccessibilityMod
                 LoggerInstance.Warning("Failed to initialize Tolk - falling back to console logging");
             }
 
+            // Initialize audio-aware announcement manager
+            try
+            {
+                var audioManager = AudioAwareAnnouncementManager.Instance;
+                LoggerInstance.Msg("AudioAwareAnnouncementManager initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                LoggerInstance.Error($"Failed to initialize AudioAwareAnnouncementManager: {ex}");
+            }
+
             // Initialize modular systems
             navigationSystem = new SmartNavigationSystem();
             inputManager = new InputManager(navigationSystem);
@@ -96,18 +108,21 @@ namespace AccessibilityMod
         {
             try
             {
+                // Update audio-aware announcement manager
+                AudioAwareAnnouncementManager.Instance.Update();
+
                 // Handle input through the centralized input manager
                 inputManager.HandleInput();
-                
+
                 // Update movement monitoring
                 navigationSystem.UpdateMovement();
-                
+
                 // Update UI navigation
                 uiNavigationHandler.UpdateUINavigation();
-                
+
                 // Update inventory navigation
                 inventoryHandler.Update();
-                
+
                 // Update thought cabinet cache
                 ThoughtCabinetNavigationHandler.UpdateThoughtCache();
             }
