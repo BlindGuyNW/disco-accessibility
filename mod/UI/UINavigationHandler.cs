@@ -103,7 +103,6 @@ namespace AccessibilityMod.UI
                     {
                         lastSelectedUIObject = currentSelection;
 
-
                         // Check if this is a dialog response button selection
                         CheckForDialogSelection(currentSelection);
 
@@ -259,28 +258,25 @@ namespace AccessibilityMod.UI
                     
                     // Notify DialogStateManager of available responses
                     DialogStateManager.OnResponsesUpdated(responseTexts);
-                    
-                    // Special handling for single response
+
+                    // Special handling for single response - always announce single options
                     if (responseTexts.Count == 1)
                     {
                         string singleResponse = responseTexts[0];
-                        
-                        // Check if this is a "Continue" type response
-                        if (singleResponse.IndexOf("continue", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            singleResponse.IndexOf("next", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            singleResponse.Length < 50) // Short responses are often continue prompts
+
+                        // Make sure it's announced even if not selected yet
+                        if (singleResponse != lastSpokenText)
                         {
-                            // Make sure it's announced even if not selected yet
-                            if (singleResponse != lastSpokenText)
-                            {
-                                // If user is actively navigating, always announce immediately
-                                // Otherwise, queue if dialogue audio is playing
-                                var category = IsUserNavigating() || !AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying()
-                                    ? AnnouncementCategory.Immediate
-                                    : AnnouncementCategory.Queueable;
-                                TolkScreenReader.Instance.Speak($"Single option: {singleResponse}", false, category, AnnouncementSource.UI);
-                                lastSpokenText = singleResponse;
-                            }
+                            bool isUserNav = IsUserNavigating();
+                            bool isAudioPlaying = AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying();
+
+                            // If user is actively navigating, always announce immediately
+                            // Otherwise, queue if dialogue audio is playing
+                            var category = isUserNav || !isAudioPlaying
+                                ? AnnouncementCategory.Immediate
+                                : AnnouncementCategory.Queueable;
+                            TolkScreenReader.Instance.Speak($"Single option: {singleResponse}", false, category, AnnouncementSource.UI);
+                            lastSpokenText = singleResponse;
                         }
                     }
                 }
