@@ -441,7 +441,7 @@ namespace AccessibilityMod.Patches
             try
             {
                 System.Text.StringBuilder result = new System.Text.StringBuilder();
-                
+
                 // Add the display name
                 if (!string.IsNullOrEmpty(item.displayName))
                 {
@@ -451,7 +451,7 @@ namespace AccessibilityMod.Patches
                 {
                     result.Append(item.listName);
                 }
-                
+
                 // Add equipment effects/bonuses
                 if (item.equipEffects != null && item.equipEffects.Count > 0)
                 {
@@ -469,13 +469,55 @@ namespace AccessibilityMod.Patches
                         }
                     }
                 }
-                
+
+                // Add substance (consumable) information
+                if (item.substance)
+                {
+                    result.Append(". Consumable");
+
+                    // Add number of uses for multi-use items
+                    if (item.substanceUses > 0)
+                    {
+                        result.Append($", {item.substanceUses} use{(item.substanceUses != 1 ? "s" : "")} remaining");
+                    }
+
+                    // Add substance effects (bonuses/penalties when consumed)
+                    if (item.substanceBuffs != null && item.substanceBuffs.Count > 0)
+                    {
+                        result.Append(". Effects: ");
+                        var effectsList = new System.Collections.Generic.List<string>();
+
+                        foreach (var buff in item.substanceBuffs)
+                        {
+                            if (buff == null || buff.effects == null)
+                                continue;
+
+                            foreach (var effect in buff.effects)
+                            {
+                                if (effect != null)
+                                {
+                                    string effectText = FormatCharacterEffect(effect);
+                                    if (!string.IsNullOrEmpty(effectText))
+                                    {
+                                        effectsList.Add(effectText);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (effectsList.Count > 0)
+                        {
+                            result.Append(string.Join(", ", effectsList));
+                        }
+                    }
+                }
+
                 // Add item description if it exists
                 if (!string.IsNullOrEmpty(item.description))
                 {
                     result.Append($". {item.description}");
                 }
-                
+
                 // Add item value if it exists
                 if (item.itemValue > 0)
                 {
@@ -490,7 +532,7 @@ namespace AccessibilityMod.Patches
                         result.Append($". Value: {valueInReal:F2} reál");
                     }
                 }
-                
+
                 return result.ToString();
             }
             catch (Exception ex)

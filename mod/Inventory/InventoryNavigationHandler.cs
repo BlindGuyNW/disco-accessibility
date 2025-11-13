@@ -230,6 +230,19 @@ namespace AccessibilityMod.Inventory
                         {
                             announcement += " (Active)";
                         }
+
+                        // Add number of uses for multi-use items
+                        if (item.substanceUses > 0)
+                        {
+                            announcement += $", {item.substanceUses} use{(item.substanceUses != 1 ? "s" : "")} remaining";
+                        }
+
+                        // Add substance effects (bonuses/penalties when consumed)
+                        string substanceEffects = GetSubstanceEffects(item);
+                        if (!string.IsNullOrEmpty(substanceEffects))
+                        {
+                            announcement += $" - Effects: {substanceEffects}";
+                        }
                     }
 
                     if (item.cursed)
@@ -326,6 +339,77 @@ namespace AccessibilityMod.Inventory
             {
                 MelonLogger.Error($"Error getting item description: {ex}");
                 return "";
+            }
+        }
+
+        private string GetSubstanceEffects(InventoryItem item)
+        {
+            try
+            {
+                if (item == null || item.substanceBuffs == null || item.substanceBuffs.Count == 0)
+                    return null;
+
+                var effectStrings = new List<string>();
+
+                // Iterate through substance buffs
+                foreach (var buff in item.substanceBuffs)
+                {
+                    if (buff == null || buff.effects == null)
+                        continue;
+
+                    // Each buff contains an array of CharacterEffects
+                    foreach (var effect in buff.effects)
+                    {
+                        if (effect == null)
+                            continue;
+
+                        // Format the effect using the same method as thoughts
+                        string effectDesc = FormatCharacterEffect(effect);
+                        if (!string.IsNullOrEmpty(effectDesc))
+                        {
+                            effectStrings.Add(effectDesc);
+                        }
+                    }
+                }
+
+                return effectStrings.Count > 0 ? string.Join(", ", effectStrings) : null;
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error getting substance effects: {ex}");
+                return null;
+            }
+        }
+
+        private string FormatCharacterEffect(CharacterEffect effect)
+        {
+            try
+            {
+                if (effect == null)
+                    return null;
+
+                // Use the game's own EffectName method to get the formatted effect string
+                string effectName = effect.EffectName(false, false, false, true);
+
+                // Filter out empty, null, or technical effects
+                if (
+                    string.IsNullOrEmpty(effectName)
+                    || effectName.Contains("LUA_")
+                    || effectName.Contains("COMMAND")
+                    || effectName.Trim() == "0"
+                    || effectName.Contains("+0 ")
+                    || effectName.Contains("-0 ")
+                )
+                {
+                    return null;
+                }
+
+                return effectName.Trim();
+            }
+            catch (Exception ex)
+            {
+                MelonLogger.Error($"Error formatting character effect: {ex}");
+                return null;
             }
         }
 
