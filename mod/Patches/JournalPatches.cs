@@ -143,7 +143,7 @@ namespace AccessibilityMod.Patches
                 
                 if (!string.IsNullOrEmpty(taskName))
                 {
-                    TolkScreenReader.Instance.Speak($"Task completed: {taskName}", true);
+                    TolkScreenReader.Instance.Speak($"Task completed: {taskName}", true, AnnouncementCategory.Queueable);
                 }
             }
             catch (Exception ex)
@@ -171,7 +171,7 @@ namespace AccessibilityMod.Patches
                 
                 if (!string.IsNullOrEmpty(taskName))
                 {
-                    TolkScreenReader.Instance.Speak($"Task canceled: {taskName}", true);
+                    TolkScreenReader.Instance.Speak($"Task canceled: {taskName}", true, AnnouncementCategory.Queueable);
                 }
             }
             catch (Exception ex)
@@ -199,7 +199,7 @@ namespace AccessibilityMod.Patches
                 
                 if (!string.IsNullOrEmpty(taskName))
                 {
-                    TolkScreenReader.Instance.Speak($"New task: {taskName}", true);
+                    TolkScreenReader.Instance.Speak($"New task: {taskName}", true, AnnouncementCategory.Queueable);
                 }
             }
             catch (Exception ex)

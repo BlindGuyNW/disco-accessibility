@@ -5,3 +5,6 @@ disco/
 *.pdb
 mod/bin/
 mod/obj/
+
+# Visual Studio solution files
+*.sln

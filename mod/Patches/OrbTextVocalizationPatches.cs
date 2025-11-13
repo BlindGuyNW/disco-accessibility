@@ -13,6 +13,9 @@ namespace AccessibilityMod.Patches
     public static class OrbTextVocalizationPatches
     {
         private static bool orbAnnouncementsEnabled = true;
+        private static string lastAnnouncedOrbText = "";
+        private static float lastOrbAnnouncementTime = 0f;
+        private const float ORB_COOLDOWN = 0.5f; // 500ms cooldown to prevent duplicate announcements
 
         static OrbTextVocalizationPatches()
         {
@@ -30,6 +33,32 @@ namespace AccessibilityMod.Patches
             // Save the new setting
             AccessibilityPreferences.SetOrbAnnouncements(orbAnnouncementsEnabled);
         }
+
+        /// <summary>
+        /// Helper method to announce orb text with duplicate detection
+        /// </summary>
+        private static void AnnounceOrbText(string text, string prefix = "Orb text")
+        {
+            if (!orbAnnouncementsEnabled || string.IsNullOrEmpty(text))
+                return;
+
+            string trimmedText = text.Trim();
+            float currentTime = Time.time;
+
+            // Check if this is a duplicate within the cooldown period
+            if (trimmedText == lastAnnouncedOrbText &&
+                (currentTime - lastOrbAnnouncementTime) < ORB_COOLDOWN)
+            {
+                return;
+            }
+
+            // Update tracking
+            lastAnnouncedOrbText = trimmedText;
+            lastOrbAnnouncementTime = currentTime;
+
+            // Announce the text
+            TolkScreenReader.Instance.Speak($"{prefix}: {trimmedText}", true, AnnouncementCategory.Queueable);
+        }
         /// <summary>
         /// Patch for FloatFactory.ShowFloat(string, Transform) to vocalize text
         /// </summary>
@@ -39,12 +68,7 @@ namespace AccessibilityMod.Patches
         {
             try
             {
-                if (!orbAnnouncementsEnabled) return;
-
-                if (!string.IsNullOrEmpty(text))
-                {
-                    TolkScreenReader.Instance.Speak($"Orb text: {text.Trim()}", true);
-                }
+                AnnounceOrbText(text);
             }
             catch (Exception ex)
             {
@@ -61,12 +85,7 @@ namespace AccessibilityMod.Patches
         {
             try
             {
-                if (!orbAnnouncementsEnabled) return;
-
-                if (!string.IsNullOrEmpty(text))
-                {
-                    TolkScreenReader.Instance.Speak($"Orb text: {text.Trim()}", true);
-                }
+                AnnounceOrbText(text);
             }
             catch (Exception ex)
             {
@@ -83,18 +102,16 @@ namespace AccessibilityMod.Patches
         {
             try
             {
-                if (!orbAnnouncementsEnabled) return;
-
                 if (__result != null)
                 {
                     string displayedText = __result.text;
                     if (!string.IsNullOrEmpty(displayedText))
                     {
-                        TolkScreenReader.Instance.Speak($"Orb text: {displayedText.Trim()}", true);
+                        AnnounceOrbText(displayedText);
                     }
                     else if (!string.IsNullOrEmpty(fallbackText))
                     {
-                        TolkScreenReader.Instance.Speak($"Orb text: {fallbackText.Trim()}", true);
+                        AnnounceOrbText(fallbackText);
                     }
                 }
             }
@@ -113,18 +130,16 @@ namespace AccessibilityMod.Patches
         {
             try
             {
-                if (!orbAnnouncementsEnabled) return;
-
                 if (__result != null)
                 {
                     string displayedText = __result.text;
                     if (!string.IsNullOrEmpty(displayedText))
                     {
-                        TolkScreenReader.Instance.Speak($"Orb text: {displayedText.Trim()}", true);
+                        AnnounceOrbText(displayedText);
                     }
                     else if (!string.IsNullOrEmpty(fallbackText))
                     {
-                        TolkScreenReader.Instance.Speak($"Orb text: {fallbackText.Trim()}", true);
+                        AnnounceOrbText(fallbackText);
                     }
                 }
             }
@@ -143,12 +158,7 @@ namespace AccessibilityMod.Patches
         {
             try
             {
-                if (!orbAnnouncementsEnabled) return;
-
-                if (!string.IsNullOrEmpty(value))
-                {
-                    TolkScreenReader.Instance.Speak($"Float text: {value.Trim()}", true);
-                }
+                AnnounceOrbText(value, "Float text");
             }
             catch (Exception ex)
             {

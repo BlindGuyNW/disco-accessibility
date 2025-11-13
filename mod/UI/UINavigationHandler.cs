@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using MelonLoader;
+using AccessibilityMod.Audio;
 
 namespace AccessibilityMod.UI
 {
@@ -12,19 +13,63 @@ namespace AccessibilityMod.UI
     {
         public static GameObject lastSelectedUIObject = null;
         public static string lastSpokenText = "";
-        
+
         // Track dialog responses for better single option detection
         private static List<Il2Cpp.SunshineResponseButton> currentResponseButtons = new List<Il2Cpp.SunshineResponseButton>();
         private static Il2Cpp.SunshineContinueButton lastSunshineContinueButton = null;
         private static float lastResponseCheckTime = 0f;
         private static readonly float RESPONSE_CHECK_INTERVAL = 0.5f; // Check for responses every 500ms
-        
+
+        // Track user navigation activity
+        private static float lastUserNavigationTime = 0f;
+        private const float USER_NAVIGATION_WINDOW = 0.5f; // 500ms window after arrow key press
+
         // Dialog text scanning removed - now using OnConversationLine patch instead
+
+        /// <summary>
+        /// Call this when user presses navigation keys to mark it as user-initiated
+        /// </summary>
+        public static void MarkUserNavigation()
+        {
+            lastUserNavigationTime = Time.time;
+
+            // Clear queued UI announcements since user is now actively navigating
+            // Keeps important notifications like skill checks and task completions
+            AudioAwareAnnouncementManager.Instance.ClearUIAnnouncements();
+        }
+
+        /// <summary>
+        /// Check if we're within the user navigation window (recently pressed arrow keys)
+        /// </summary>
+        private static bool IsUserNavigating()
+        {
+            return (Time.time - lastUserNavigationTime) < USER_NAVIGATION_WINDOW;
+        }
 
         public void UpdateUINavigation()
         {
             try
             {
+                // Detect keyboard arrow key presses for user navigation tracking
+                if (UnityEngine.Input.GetKeyDown(KeyCode.UpArrow) ||
+                    UnityEngine.Input.GetKeyDown(KeyCode.DownArrow) ||
+                    UnityEngine.Input.GetKeyDown(KeyCode.LeftArrow) ||
+                    UnityEngine.Input.GetKeyDown(KeyCode.RightArrow) ||
+                    UnityEngine.Input.GetKeyDown(KeyCode.Tab))
+                {
+                    MarkUserNavigation();
+                }
+
+                // Detect controller input (left stick and d-pad)
+                float horizontalAxis = UnityEngine.Input.GetAxis("Horizontal");
+                float verticalAxis = UnityEngine.Input.GetAxis("Vertical");
+
+                // Check for any significant analog stick movement or d-pad input
+                if (Mathf.Abs(horizontalAxis) > 0.1f || Mathf.Abs(verticalAxis) > 0.1f)
+                {
+                    MarkUserNavigation();
+                }
+
                 // Only check EventSystem selection (controller/keyboard navigation)
                 // Removed Selectable.Highlighted checking to prevent mouse hover announcements
                 CheckCurrentUISelection();
@@ -58,7 +103,6 @@ namespace AccessibilityMod.UI
                     {
                         lastSelectedUIObject = currentSelection;
 
-
                         // Check if this is a dialog response button selection
                         CheckForDialogSelection(currentSelection);
 
@@ -77,7 +121,12 @@ namespace AccessibilityMod.UI
                                     continueText = "Continue";
                                 }
 
-                                TolkScreenReader.Instance.Speak(continueText, false);
+                                // If user is actively navigating, always announce immediately
+                                // Otherwise, queue if dialogue audio is playing
+                                var category = IsUserNavigating() || !AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying()
+                                    ? AnnouncementCategory.Immediate
+                                    : AnnouncementCategory.Queueable;
+                                TolkScreenReader.Instance.Speak(continueText, false, category, AnnouncementSource.UI);
                                 return;
                             }
                         }
@@ -132,7 +181,12 @@ namespace AccessibilityMod.UI
 
                         if (!string.IsNullOrEmpty(speechText))
                         {
-                            TolkScreenReader.Instance.Speak(speechText, false);
+                            // If user is actively navigating with arrow keys, always announce immediately
+                            // Otherwise, queue if dialogue audio is playing
+                            var category = IsUserNavigating() || !AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying()
+                                ? AnnouncementCategory.Immediate
+                                : AnnouncementCategory.Queueable;
+                            TolkScreenReader.Instance.Speak(speechText, false, category, AnnouncementSource.UI);
                             lastSpokenText = speechText;
                         }
                     }
@@ -204,23 +258,25 @@ namespace AccessibilityMod.UI
                     
                     // Notify DialogStateManager of available responses
                     DialogStateManager.OnResponsesUpdated(responseTexts);
-                    
-                    // Special handling for single response
+
+                    // Special handling for single response - always announce single options
                     if (responseTexts.Count == 1)
                     {
                         string singleResponse = responseTexts[0];
-                        
-                        // Check if this is a "Continue" type response
-                        if (singleResponse.IndexOf("continue", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            singleResponse.IndexOf("next", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            singleResponse.Length < 50) // Short responses are often continue prompts
+
+                        // Make sure it's announced even if not selected yet
+                        if (singleResponse != lastSpokenText)
                         {
-                            // Make sure it's announced even if not selected yet
-                            if (singleResponse != lastSpokenText)
-                            {
-                                TolkScreenReader.Instance.Speak($"Single option: {singleResponse}", false);
-                                lastSpokenText = singleResponse;
-                            }
+                            bool isUserNav = IsUserNavigating();
+                            bool isAudioPlaying = AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying();
+
+                            // If user is actively navigating, always announce immediately
+                            // Otherwise, queue if dialogue audio is playing
+                            var category = isUserNav || !isAudioPlaying
+                                ? AnnouncementCategory.Immediate
+                                : AnnouncementCategory.Queueable;
+                            TolkScreenReader.Instance.Speak($"Single option: {singleResponse}", false, category, AnnouncementSource.UI);
+                            lastSpokenText = singleResponse;
                         }
                     }
                 }
@@ -256,7 +312,12 @@ namespace AccessibilityMod.UI
                         }
 
                         // Announce the continue button
-                        TolkScreenReader.Instance.Speak(continueText, false);
+                        // If user is actively navigating, always announce immediately
+                        // Otherwise, queue if dialogue audio is playing
+                        var category = IsUserNavigating() || !AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying()
+                            ? AnnouncementCategory.Immediate
+                            : AnnouncementCategory.Queueable;
+                        TolkScreenReader.Instance.Speak(continueText, false, category, AnnouncementSource.UI);
 
                         // Also notify DialogStateManager about this single response
                         DialogStateManager.OnResponsesUpdated(new List<string> { continueText });
@@ -429,7 +490,12 @@ namespace AccessibilityMod.UI
 
             if (!string.IsNullOrEmpty(speechText))
             {
-                TolkScreenReader.Instance.Speak(speechText, false);
+                // If user is actively navigating, always announce immediately
+                // Otherwise, queue if dialogue audio is playing
+                var category = IsUserNavigating() || !AudioAwareAnnouncementManager.Instance.IsDialogueAudioPlaying()
+                    ? AnnouncementCategory.Immediate
+                    : AnnouncementCategory.Queueable;
+                TolkScreenReader.Instance.Speak(speechText, false, category, AnnouncementSource.UI);
             }
         }
 
