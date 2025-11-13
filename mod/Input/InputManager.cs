@@ -110,6 +110,12 @@ namespace AccessibilityMod.Input
                 TolkScreenReader.Instance.ToggleGlobalInterrupt();
             }
 
+            // Officer profile announcement: O key
+            if (UnityEngine.Input.GetKeyDown(KeyCode.O))
+            {
+                Patches.OfficerProfileAnnouncement.AnnounceOfficerProfile();
+            }
+
             // Read skill description in character sheet: N key
             if (UnityEngine.Input.GetKeyDown(KeyCode.N))
             {

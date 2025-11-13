@@ -47,7 +47,6 @@ namespace AccessibilityMod.Patches
 
                     // Announce the detailed check information
                     TolkScreenReader.Instance.Speak(checkInfo, true);
-                    MelonLogger.Msg($"[SKILL CHECK TOOLTIP] {checkInfo}");
                 }
                 catch (Exception ex)
                 {
