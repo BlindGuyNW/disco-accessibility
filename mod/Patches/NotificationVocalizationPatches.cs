@@ -8,6 +8,10 @@ namespace AccessibilityMod.Patches
     [HarmonyPatch]
     public static class NotificationVocalizationPatches
     {
+        private static string lastAnnouncedSkillCheck = "";
+        private static float lastSkillCheckTime = 0f;
+        private const float SKILL_CHECK_COOLDOWN = 0.5f; // 500ms cooldown to prevent duplicate announcements
+
         /// <summary>
         /// Single hook for all notifications - only patch PlayNextNotification to avoid duplicates
         /// This should capture all notifications when they actually display
@@ -93,14 +97,35 @@ namespace AccessibilityMod.Patches
                         string result = isSuccess ? "Success" : "Failure";
                         fullText += ": " + result;
 
-                        // The queue deduplication will handle filtering duplicates
-                        TolkScreenReader.Instance.Speak($"Skill check: {fullText}", true, AnnouncementCategory.Queueable);
+                        // Check for duplicates before announcing
+                        float currentTime = UnityEngine.Time.time;
+                        string announcementText = $"Skill check: {fullText}";
+
+                        if (announcementText == lastAnnouncedSkillCheck &&
+                            (currentTime - lastSkillCheckTime) < SKILL_CHECK_COOLDOWN)
+                        {
+                            return;
+                        }
+
+                        lastAnnouncedSkillCheck = announcementText;
+                        lastSkillCheckTime = currentTime;
+                        TolkScreenReader.Instance.Speak(announcementText, true, AnnouncementCategory.Queueable);
                     }
                     else if (!string.IsNullOrEmpty(cleanResult))
                     {
                         // Fallback to cleaned result if we can't get skill name
-                        // The queue deduplication will handle filtering duplicates
-                        TolkScreenReader.Instance.Speak($"Skill check: {cleanResult}", true, AnnouncementCategory.Queueable);
+                        float currentTime = UnityEngine.Time.time;
+                        string announcementText = $"Skill check: {cleanResult}";
+
+                        if (announcementText == lastAnnouncedSkillCheck &&
+                            (currentTime - lastSkillCheckTime) < SKILL_CHECK_COOLDOWN)
+                        {
+                            return;
+                        }
+
+                        lastAnnouncedSkillCheck = announcementText;
+                        lastSkillCheckTime = currentTime;
+                        TolkScreenReader.Instance.Speak(announcementText, true, AnnouncementCategory.Queueable);
                     }
                 }
             }
