@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
 using Il2CppNotificationSystem;
 using MelonLoader;
@@ -12,13 +13,41 @@ namespace AccessibilityMod.Patches
         private static float lastSkillCheckTime = 0f;
         private const float SKILL_CHECK_COOLDOWN = 0.5f; // 500ms cooldown to prevent duplicate announcements
 
+        // Track individual CheckResult instances to prevent the same object from being announced multiple times
+        private static Dictionary<int, float> announcedCheckResults = new Dictionary<int, float>();
+        private const float CHECK_RESULT_CLEANUP_TIME = 30.0f; // Clean up tracked instances after 30 seconds
+
+        /// <summary>
+        /// Cleans up old CheckResult instances from tracking to prevent memory buildup
+        /// </summary>
+        private static void CleanupOldCheckResults()
+        {
+            float currentTime = UnityEngine.Time.time;
+            var keysToRemove = new List<int>();
+
+            foreach (var kvp in announcedCheckResults)
+            {
+                if (currentTime - kvp.Value > CHECK_RESULT_CLEANUP_TIME)
+                {
+                    keysToRemove.Add(kvp.Key);
+                }
+            }
+
+            foreach (var key in keysToRemove)
+            {
+                announcedCheckResults.Remove(key);
+            }
+        }
+
         /// <summary>
         /// Single hook for all notifications - only patch PlayNextNotification to avoid duplicates
         /// This should capture all notifications when they actually display
         /// </summary>
         [HarmonyPatch(typeof(NotificationManager), "PlayNextNotification")]
         [HarmonyPostfix]
-        public static void NotificationManager_PlayNextNotification_Postfix(NotificationManager __instance)
+        public static void NotificationManager_PlayNextNotification_Postfix(
+            NotificationManager __instance
+        )
         {
             try
             {
@@ -48,7 +77,11 @@ namespace AccessibilityMod.Patches
 
                     if (!string.IsNullOrEmpty(notificationText))
                     {
-                        TolkScreenReader.Instance.Speak($"Notification: {notificationText}", true, AnnouncementCategory.Queueable);
+                        TolkScreenReader.Instance.Speak(
+                            $"Notification: {notificationText}",
+                            true,
+                            AnnouncementCategory.Queueable
+                        );
                     }
                 }
             }
@@ -64,12 +97,29 @@ namespace AccessibilityMod.Patches
         /// </summary>
         [HarmonyPatch(typeof(Il2CppSunshine.Metric.CheckResult), "CheckText")]
         [HarmonyPostfix]
-        public static void CheckResult_CheckText_Postfix(Il2CppSunshine.Metric.CheckResult __instance, string __result)
+        public static void CheckResult_CheckText_Postfix(
+            Il2CppSunshine.Metric.CheckResult __instance,
+            string __result
+        )
         {
             try
             {
                 if (__instance != null)
                 {
+                    // Clean up old tracked CheckResult instances
+                    CleanupOldCheckResults();
+
+                    // Get unique identifier for this CheckResult instance
+                    int instanceHash = __instance.GetHashCode();
+                    float currentTime = UnityEngine.Time.time;
+
+                    // Check if we've already announced this specific CheckResult instance
+                    if (announcedCheckResults.ContainsKey(instanceHash))
+                    {
+                        // This CheckResult was already announced - skip to avoid duplicate
+                        return;
+                    }
+
                     // Build complete skill check text using CheckResult properties
                     string skillName = __instance.SkillName();
                     string difficulty = __instance.difficulty;
@@ -79,7 +129,11 @@ namespace AccessibilityMod.Patches
                     string cleanResult = __result;
                     if (!string.IsNullOrEmpty(cleanResult))
                     {
-                        cleanResult = System.Text.RegularExpressions.Regex.Replace(cleanResult, @"<[^>]*>", "");
+                        cleanResult = System.Text.RegularExpressions.Regex.Replace(
+                            cleanResult,
+                            @"<[^>]*>",
+                            ""
+                        );
                         cleanResult = cleanResult.Replace("[", "").Replace("]", "").Trim();
                     }
 
@@ -97,35 +151,32 @@ namespace AccessibilityMod.Patches
                         string result = isSuccess ? "Success" : "Failure";
                         fullText += ": " + result;
 
-                        // Check for duplicates before announcing
-                        float currentTime = UnityEngine.Time.time;
                         string announcementText = $"Skill check: {fullText}";
 
-                        if (announcementText == lastAnnouncedSkillCheck &&
-                            (currentTime - lastSkillCheckTime) < SKILL_CHECK_COOLDOWN)
-                        {
-                            return;
-                        }
-
+                        // Track this CheckResult instance and announce it
+                        announcedCheckResults[instanceHash] = currentTime;
                         lastAnnouncedSkillCheck = announcementText;
                         lastSkillCheckTime = currentTime;
-                        TolkScreenReader.Instance.Speak(announcementText, true, AnnouncementCategory.Queueable);
+                        TolkScreenReader.Instance.Speak(
+                            announcementText,
+                            true,
+                            AnnouncementCategory.Queueable
+                        );
                     }
                     else if (!string.IsNullOrEmpty(cleanResult))
                     {
                         // Fallback to cleaned result if we can't get skill name
-                        float currentTime = UnityEngine.Time.time;
                         string announcementText = $"Skill check: {cleanResult}";
 
-                        if (announcementText == lastAnnouncedSkillCheck &&
-                            (currentTime - lastSkillCheckTime) < SKILL_CHECK_COOLDOWN)
-                        {
-                            return;
-                        }
-
+                        // Track this CheckResult instance and announce it
+                        announcedCheckResults[instanceHash] = currentTime;
                         lastAnnouncedSkillCheck = announcementText;
                         lastSkillCheckTime = currentTime;
-                        TolkScreenReader.Instance.Speak(announcementText, true, AnnouncementCategory.Queueable);
+                        TolkScreenReader.Instance.Speak(
+                            announcementText,
+                            true,
+                            AnnouncementCategory.Queueable
+                        );
                     }
                 }
             }

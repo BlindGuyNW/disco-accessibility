@@ -1,12 +1,12 @@
 using System;
 using System.Text;
+using AccessibilityMod.UI;
 using HarmonyLib;
 using Il2Cpp;
 using Il2CppSunshine;
 using Il2CppSunshine.Metric;
 using Il2CppSystem.Collections.Generic;
 using MelonLoader;
-using AccessibilityMod.UI;
 
 namespace AccessibilityMod.Patches
 {
@@ -25,7 +25,8 @@ namespace AccessibilityMod.Patches
             {
                 try
                 {
-                    if (data == null) return;
+                    if (data == null)
+                        return;
 
                     // Wait for UI to settle before reading button state
                     MelonLoader.MelonCoroutines.Start(DelayedSkillCheckAnnouncement(data));
@@ -36,7 +37,9 @@ namespace AccessibilityMod.Patches
                 }
             }
 
-            private static System.Collections.IEnumerator DelayedSkillCheckAnnouncement(CheckResult data)
+            private static System.Collections.IEnumerator DelayedSkillCheckAnnouncement(
+                CheckResult data
+            )
             {
                 yield return new UnityEngine.WaitForSeconds(0.25f);
 
@@ -101,11 +104,19 @@ namespace AccessibilityMod.Patches
                 string dialogText = "";
 
                 // Look for the currently selected UI element
-                var currentSelection = UnityEngine.EventSystems.EventSystem.current?.currentSelectedGameObject;
+                var currentSelection = UnityEngine
+                    .EventSystems
+                    .EventSystem
+                    .current
+                    ?.currentSelectedGameObject;
                 if (currentSelection != null)
                 {
-                    var selectedButton = currentSelection.GetComponent<Il2Cpp.SunshineResponseButton>();
-                    if (selectedButton != null && (selectedButton.whiteCheck || selectedButton.redCheck))
+                    var selectedButton =
+                        currentSelection.GetComponent<Il2Cpp.SunshineResponseButton>();
+                    if (
+                        selectedButton != null
+                        && (selectedButton.whiteCheck || selectedButton.redCheck)
+                    )
                     {
                         checkType = selectedButton.whiteCheck ? "White Check" : "Red Check";
 
@@ -140,7 +151,13 @@ namespace AccessibilityMod.Patches
                         }
                     }
 
-                    return $"{cleanDialog}. {checkInfo}";
+                    // Insert a period at the end of cleanDialog if it doesn't already end with punctuation
+                    if (!string.IsNullOrEmpty(cleanDialog) && !".!?".Contains(cleanDialog[^1]))
+                    {
+                        cleanDialog += ".";
+                    }
+
+                    return $"{cleanDialog} {checkInfo}";
                 }
                 else
                 {
@@ -178,13 +195,17 @@ namespace AccessibilityMod.Patches
                     int totalBonus = CheckResult.CalcCheckBonusTotal(check.rollBonuses);
                     if (totalBonus != 0)
                     {
-                        string bonusText = totalBonus > 0 ? $"+{totalBonus}" : totalBonus.ToString();
+                        string bonusText =
+                            totalBonus > 0 ? $"+{totalBonus}" : totalBonus.ToString();
                         modifierText += $", Roll bonus {bonusText}";
                     }
                 }
 
                 // Add individual modifiers if any
-                if (check.applicableTargetModifiers != null && check.applicableTargetModifiers.Count > 0)
+                if (
+                    check.applicableTargetModifiers != null
+                    && check.applicableTargetModifiers.Count > 0
+                )
                 {
                     foreach (var modifier in check.applicableTargetModifiers)
                     {
@@ -192,7 +213,8 @@ namespace AccessibilityMod.Patches
                         {
                             // Flip sign to match tooltip display (negative internal values = positive user display)
                             int displayValue = -modifier.bonus;
-                            string modValue = displayValue > 0 ? $"+{displayValue}" : displayValue.ToString();
+                            string modValue =
+                                displayValue > 0 ? $"+{displayValue}" : displayValue.ToString();
                             modifierText += $", {modValue} from {modifier.explanation}";
                         }
                     }
@@ -234,7 +256,10 @@ namespace AccessibilityMod.Patches
                 }
 
                 // Get probability text
-                if (tooltip.titleProbability != null && !string.IsNullOrEmpty(tooltip.titleProbability.text))
+                if (
+                    tooltip.titleProbability != null
+                    && !string.IsNullOrEmpty(tooltip.titleProbability.text)
+                )
                 {
                     sb.Append(", ");
                     sb.Append(tooltip.titleProbability.text);
