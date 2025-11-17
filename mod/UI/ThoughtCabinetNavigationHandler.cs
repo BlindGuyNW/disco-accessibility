@@ -50,12 +50,6 @@ namespace AccessibilityMod.UI
                     AnnounceFullThoughtDetails();
                 }
 
-                // F1 key - Read slot unlock requirements  
-                if (UnityEngine.Input.GetKeyDown(KeyCode.F1))
-                {
-                    AnnounceSlotUnlockInfo();
-                }
-
                 // F2 key - List all available thoughts
                 if (UnityEngine.Input.GetKeyDown(KeyCode.F2))
                 {
@@ -66,12 +60,6 @@ namespace AccessibilityMod.UI
                 if (UnityEngine.Input.GetKeyDown(KeyCode.F3))
                 {
                     ListEquippedThoughts();
-                }
-
-                // F4 key - Read skill point information
-                if (UnityEngine.Input.GetKeyDown(KeyCode.F4))
-                {
-                    AnnounceSkillPointInfo();
                 }
             }
             catch (Exception ex)
@@ -315,25 +303,6 @@ namespace AccessibilityMod.UI
             }
         }
 
-        /// <summary>
-        /// Announce information about slot unlocking
-        /// </summary>
-        private static void AnnounceSlotUnlockInfo()
-        {
-            try
-            {
-                string info = "To unlock additional thought slots, you need to invest skill points. " +
-                            "Open your character sheet to see available skill points. " +
-                            "Each thought cabinet tier requires different amounts of skill points to unlock. " +
-                            "Focus on Intellect skills for more thought slots, or Psyche skills for faster research times.";
-                
-                TolkScreenReader.Instance.Speak(info, true);
-            }
-            catch (Exception ex)
-            {
-                MelonLogger.Error($"Error announcing slot unlock info: {ex}");
-            }
-        }
 
         /// <summary>
         /// List all available thoughts
@@ -398,25 +367,6 @@ namespace AccessibilityMod.UI
             }
         }
 
-        /// <summary>
-        /// Announce skill point information
-        /// </summary>
-        private static void AnnounceSkillPointInfo()
-        {
-            try
-            {
-                string info = "Skill points are gained by leveling up and can be used to improve skills or unlock thought slots. " +
-                            "Check your character sheet to see how many skill points you have available. " +
-                            "Intellect skills like Logic and Encyclopedia can unlock more thought slots. " +
-                            "Psyche skills can reduce thought research times.";
-                
-                TolkScreenReader.Instance.Speak(info, true);
-            }
-            catch (Exception ex)
-            {
-                MelonLogger.Error($"Error announcing skill point info: {ex}");
-            }
-        }
 
         /// <summary>
         /// Extract thought slot information
