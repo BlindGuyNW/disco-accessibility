@@ -170,6 +170,12 @@ namespace AccessibilityMod.Input
                 SkillDescriptionReader.ReadSelectedSkillDescription();
             }
 
+            // Check Kim dialogue status: K key
+            if (UnityEngine.Input.GetKeyDown(KeyCode.K))
+            {
+                AnnounceKimDialogueStatus();
+            }
+
             // Handle Thought Cabinet specific input
             ThoughtCabinetNavigationHandler.HandleThoughtCabinetInput();
         }
@@ -212,6 +218,23 @@ namespace AccessibilityMod.Input
             {
                 MelonLogger.Error($"Error announcing current selection: {ex}");
                 TolkScreenReader.Instance.Speak("Error getting current selection", true);
+            }
+        }
+
+        private void AnnounceKimDialogueStatus()
+        {
+            try
+            {
+                bool hasDialogue = PortraitNotificationPatches.IsKimDialogueAvailable();
+                string message = hasDialogue
+                    ? "Kim has dialogue available"
+                    : "No new dialogue from Kim";
+                TolkScreenReader.Instance.Speak(message, true);
+            }
+            catch (System.Exception ex)
+            {
+                MelonLogger.Error($"Error checking Kim dialogue status: {ex}");
+                TolkScreenReader.Instance.Speak("Error checking Kim status", true);
             }
         }
     }
