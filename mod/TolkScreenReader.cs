@@ -107,10 +107,10 @@ namespace AccessibilityMod
 
         public bool Speak(string text, bool interrupt = false, AnnouncementCategory category = AnnouncementCategory.Immediate, Audio.AnnouncementSource source = Audio.AnnouncementSource.Other)
         {
-            return SendSpeech(text, interrupt, true);
+            return SendSpeech(text, interrupt, true, category, source);
         }
 
-        private bool SendSpeech(string text, bool interrupt, bool respectSuppression)
+        private bool SendSpeech(string text, bool interrupt, bool respectSuppression, AnnouncementCategory category = AnnouncementCategory.Immediate, Audio.AnnouncementSource source = Audio.AnnouncementSource.Other)
         {
             if (!isInitialized || string.IsNullOrEmpty(text)) return false;
             if (respectSuppression && suppressAnnouncements) return false;

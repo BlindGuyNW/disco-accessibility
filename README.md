@@ -44,6 +44,18 @@ Once in-game, the following keyboard commands are available:
 | `'` | Distance-based scene scanner |
 | `` ` `` | Announce current UI selection |
 
+#### Waypoints
+
+| Key | Function |
+|-----|----------|
+| `Ctrl + [` | Focus waypoint list |
+| `Alt + [` | Create waypoint at current position |
+| `Alt + ]` | Delete current waypoint |
+| `Enter` | Confirm waypoint name (during creation) |
+| `Escape` | Cancel waypoint creation |
+
+*Note: When waypoints are focused, `.`, `Shift + .`, and `,` work with waypoints instead of objects.*
+
 #### Character Information
 
 | Key | Function |
@@ -75,6 +87,7 @@ Once in-game, the following keyboard commands are available:
 - **Screen Reader Support**: Works with NVDA, JAWS, and includes SAPI fallback
 - **Braille Display Support**: Automatically outputs to braille displays
 - **Smart Object Categorization**: NPCs, locations, containers, and more
+- **Waypoint System**: Create, name, and navigate to custom waypoints with persistent storage
 - **Dialog Reading**: Multiple reading modes with language support
 - **Inventory Navigation**: Full keyboard navigation of inventory screens
 - **UI Announcements**: Automatic reading of menus and UI elements
